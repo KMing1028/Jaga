@@ -772,13 +772,24 @@ export function CalculatorScreen({ onBack }: { onBack: () => void }) {
   const a = parseInt(age, 10) || 0;
   const r = parseInt(retireAge, 10) || 0;
   const m = parseFloat(monthly) || 0;
-  const annual = parseFloat(returnPct) || 0;
+  // Guard against absurd return rates; 30%/yr is already fantasy territory.
+  const annual = Math.min(Math.max(parseFloat(returnPct) || 0, 0), 30);
+
+  let invalidMsg: string | null = null;
+  if (a > 0 && r > 0 && r <= a) {
+    invalidMsg = 'Retirement age must be higher than your current age.';
+  } else if (a > 100 || r > 100) {
+    invalidMsg = 'Enter realistic ages (up to 100).';
+  } else if (a > 0 && r > 0 && m <= 0) {
+    invalidMsg = 'Enter a monthly amount above RM0.';
+  }
 
   const months = Math.max(0, (r - a) * 12);
   const i = annual / 100 / 12;
   const futureValue = i > 0 ? m * ((Math.pow(1 + i, months) - 1) / i) : m * months;
   const contributed = m * months;
   const growth = futureValue - contributed;
+  const valid = !invalidMsg && months > 0 && m > 0;
   const fmt = (n: number) =>
     'RM' + n.toLocaleString('en-MY', { maximumFractionDigits: 0 });
 
@@ -797,12 +808,13 @@ export function CalculatorScreen({ onBack }: { onBack: () => void }) {
 
       <View style={styles.calcResult}>
         <Text style={styles.calcResultLabel}>PROJECTED AT AGE {r || '—'}</Text>
-        <Text style={styles.calcResultBig}>{months > 0 ? fmt(futureValue) : '—'}</Text>
-        {months > 0 && (
+        <Text style={styles.calcResultBig}>{valid ? fmt(futureValue) : '—'}</Text>
+        {valid && (
           <Text style={styles.calcResultSub}>
             {fmt(contributed)} saved by you + {fmt(growth)} growth
           </Text>
         )}
+        {invalidMsg && <Text style={styles.calcInvalid}>{invalidMsg}</Text>}
       </View>
 
       <View style={styles.noteBox}>
@@ -1706,6 +1718,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#C7B299',
     marginTop: spacing.xs,
+  },
+  calcInvalid: {
+    fontSize: 13,
+    color: '#FCD9A8',
+    marginTop: spacing.xs,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 
   // fund returns (single product)
