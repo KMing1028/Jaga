@@ -7,7 +7,7 @@ export const colors = {
   surfaceSoft: '#FFFEF2',
   ink: '#38240D',
   muted: '#713600',
-  faint: '#A38A6C',
+  faint: '#8A6A45', // darkened from #A38A6C for ~4.7:1 contrast on the cream bg
   border: '#EDE4C2',
   accent: '#C05800',
   accentSoft: '#FBEEDC',

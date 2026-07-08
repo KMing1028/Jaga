@@ -209,7 +209,14 @@ export function DashboardScreen({
               {autoDebit ? 'Auto-debit on — plans charged monthly' : 'Auto-debit off — pay manually anytime'}
             </Text>
           </View>
-          <Pressable onPress={onToggleAutoDebit} hitSlop={8} style={[styles.toggle, autoDebit && styles.toggleOn]}>
+          <Pressable
+            onPress={onToggleAutoDebit}
+            hitSlop={8}
+            style={[styles.toggle, autoDebit && styles.toggleOn]}
+            accessibilityRole="switch"
+            accessibilityLabel="Auto-debit monthly payments"
+            accessibilityState={{ checked: autoDebit }}
+          >
             <View style={[styles.toggleKnob, autoDebit && styles.toggleKnobOn]} />
           </Pressable>
         </Pressable>

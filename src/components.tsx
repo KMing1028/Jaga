@@ -162,7 +162,13 @@ export function PrimaryButton({
 
 export function BackLink({ onPress, label = 'Back' }: { onPress: () => void; label?: string }) {
   return (
-    <Pressable onPress={onPress} hitSlop={12} style={{ alignSelf: 'flex-start' }}>
+    <Pressable
+      onPress={onPress}
+      hitSlop={12}
+      style={{ alignSelf: 'flex-start' }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       <Text style={styles.backText}>‹ {label}</Text>
     </Pressable>
   );
@@ -183,7 +189,14 @@ export function TabBar({ current, onChange }: { current: TabId; onChange: (t: Ta
       {tabs.map((t) => {
         const activeTab = t.id === current;
         return (
-          <Pressable key={t.id} style={styles.tabItem} onPress={() => onChange(t.id)}>
+          <Pressable
+            key={t.id}
+            style={styles.tabItem}
+            onPress={() => onChange(t.id)}
+            accessibilityRole="tab"
+            accessibilityLabel={`${t.label} tab`}
+            accessibilityState={{ selected: activeTab }}
+          >
             <Text style={[styles.tabIcon, { opacity: activeTab ? 1 : 0.45 }]}>{t.icon}</Text>
             <Text style={[styles.tabLabel, activeTab && styles.tabLabelActive]}>{t.label}</Text>
             <View style={[styles.tabDot, { opacity: activeTab ? 1 : 0 }]} />
