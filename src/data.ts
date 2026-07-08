@@ -71,6 +71,7 @@ export type Loan = {
   tenure: string;
   features: string[];
   note?: string;
+  applyUrl?: string; // lender's real application/landing page
   relevantTo: string[] | 'all';
 };
 
@@ -693,6 +694,7 @@ export const burdenOptions = [
 export const loans: Loan[] = [
   {
     id: 'tekun',
+    applyUrl: 'https://www.tekun.gov.my/en/',
     name: 'TEKUN Mikro Financing',
     provider: 'TEKUN Nasional',
     initials: 'TK',
@@ -712,6 +714,7 @@ export const loans: Loan[] = [
   },
   {
     id: 'bsn-micro',
+    applyUrl: 'https://www.bsn.com.my/page/MyRinggit-i?language=en',
     name: 'BSN Micro / MyRinggit-i',
     provider: 'Bank Simpanan Nasional',
     initials: 'BSN',
@@ -730,6 +733,7 @@ export const loans: Loan[] = [
   },
   {
     id: 'directlending',
+    applyUrl: 'https://directlending.com.my/personal-financing/',
     name: 'Gig Worker Personal Financing',
     provider: 'Direct Lending',
     initials: 'DL',
@@ -749,6 +753,7 @@ export const loans: Loan[] = [
   },
   {
     id: 'fundingsocieties',
+    applyUrl: 'https://fundingsocieties.com.my/',
     name: 'Micro Business Financing',
     provider: 'Funding Societies',
     initials: 'FS',
@@ -767,6 +772,7 @@ export const loans: Loan[] = [
   },
   {
     id: 'boost-credit',
+    applyUrl: 'https://myboostbank.co/',
     name: 'Boost Credit Micro-Loan',
     provider: 'Boost Bank',
     initials: 'BC',

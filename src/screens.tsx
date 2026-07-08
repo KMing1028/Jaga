@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BackLink, Badge, LoanCard, LogoMark, PrimaryButton, ProductCard } from './components';
 import {
   Account,
@@ -607,6 +607,7 @@ export function LoansScreen({
 }
 
 export function LoanDetailScreen({ loan, onBack }: { loan: Loan; onBack: () => void }) {
+  const [confirming, setConfirming] = useState(false);
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
       <BackLink onPress={onBack} />
@@ -643,7 +644,36 @@ export function LoanDetailScreen({ loan, onBack }: { loan: Loan; onBack: () => v
         </View>
       ) : null}
 
-      <PrimaryButton label="Check eligibility" onPress={() => {}} style={{ marginTop: spacing.lg }} />
+      {!confirming ? (
+        <PrimaryButton
+          label="Check eligibility"
+          onPress={() => setConfirming(true)}
+          style={{ marginTop: spacing.lg }}
+        />
+      ) : (
+        <View style={styles.applyBox}>
+          <Text style={styles.applyTitle}>
+            {loan.applyUrl
+              ? `We’ll take you to ${loan.provider} to apply`
+              : `Apply directly with ${loan.provider}`}
+          </Text>
+          <Text style={styles.applySub}>
+            JAGA is a prototype — eligibility checks and applications happen on the lender’s own site, not
+            in this app.
+          </Text>
+          {loan.applyUrl ? (
+            <PrimaryButton
+              label={`Open ${loan.provider} site`}
+              onPress={() => Linking.openURL(loan.applyUrl!)}
+              style={{ marginTop: spacing.md, alignSelf: 'stretch' }}
+            />
+          ) : (
+            <Text style={styles.applySub}>
+              This lender isn’t linked in the prototype yet — search “{loan.provider}” to reach them.
+            </Text>
+          )}
+        </View>
+      )}
       <Text style={styles.disclaimer}>{loansDisclaimer}</Text>
     </ScrollView>
   );
@@ -1824,5 +1854,25 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: spacing.sm,
     lineHeight: 16,
+  },
+  applyBox: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+    alignItems: 'center',
+  },
+  applyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  applySub: {
+    fontSize: 13,
+    color: colors.muted,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
 });
