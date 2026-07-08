@@ -821,16 +821,18 @@ export function CreateAccountScreen({
   const [age, setAge] = useState('');
   const [race, setRace] = useState<string | null>(null);
   const [religion, setReligion] = useState<string | null>(null);
+  const [tried, setTried] = useState(false);
 
-  const canCreate =
-    username.trim().length >= 3 &&
-    email.includes('@') &&
-    (viaGoogle || password.length >= 6) &&
-    fullName.trim().length >= 2 &&
-    phone.replace(/\D/g, '').length >= 9 &&
-    parseInt(age, 10) >= 16 &&
-    race !== null &&
-    religion !== null;
+  const missing: string[] = [];
+  if (username.trim().length < 3) missing.push('Username — at least 3 characters');
+  if (!email.includes('@')) missing.push('A valid email address');
+  if (!viaGoogle && password.length < 6) missing.push('Password — at least 6 characters');
+  if (fullName.trim().length < 2) missing.push('Full name');
+  if (phone.replace(/\D/g, '').length < 9) missing.push('Phone number — at least 9 digits');
+  if (!(parseInt(age, 10) >= 16)) missing.push('Age — must be 16 or older');
+  if (race === null) missing.push('Race — tap one of the options');
+  if (religion === null) missing.push('Religion — tap one of the options');
+  const canCreate = missing.length === 0;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
@@ -853,16 +855,16 @@ export function CreateAccountScreen({
       <Text style={styles.orText}>or fill in manually</Text>
 
       <Text style={styles.detailLabel}>ACCOUNT</Text>
-      <FormField label="Username" value={username} onChange={setUsername} placeholder="e.g. abu_rider" />
-      <FormField label="Email" value={email} onChange={setEmail} placeholder="you@email.com" />
+      <FormField label="Username" value={username} onChange={setUsername} placeholder="e.g. abu_rider" autoComplete="username" />
+      <FormField label="Email" value={email} onChange={setEmail} placeholder="you@email.com" autoComplete="email" />
       {!viaGoogle && (
-        <FormField label="Password" value={password} onChange={setPassword} placeholder="min. 6 characters" secure />
+        <FormField label="Password" value={password} onChange={setPassword} placeholder="min. 6 characters" secure autoComplete="new-password" />
       )}
 
       <Text style={styles.detailLabel}>PERSONAL DETAILS</Text>
-      <FormField label="Full name (as per MyKad)" value={fullName} onChange={setFullName} placeholder="Your legal name" />
-      <FormField label="Phone number" value={phone} onChange={(t) => setPhone(t.replace(/[^\d+\s-]/g, ''))} placeholder="+60 12-345 6789" />
-      <FormField label="Age" value={age} onChange={(t) => setAge(t.replace(/\D/g, ''))} placeholder="e.g. 27" />
+      <FormField label="Full name (as per MyKad)" value={fullName} onChange={setFullName} placeholder="Your legal name" autoComplete="name" />
+      <FormField label="Phone number" value={phone} onChange={(t) => setPhone(t.replace(/[^\d+\s-]/g, ''))} placeholder="+60 12-345 6789" autoComplete="tel" />
+      <FormField label="Age" value={age} onChange={(t) => setAge(t.replace(/\D/g, ''))} placeholder="e.g. 27" autoComplete="off" />
 
       <Text style={styles.detailLabel}>RACE</Text>
       <View style={styles.chipWrap}>
@@ -889,11 +891,28 @@ export function CreateAccountScreen({
       <PrimaryButton
         label="Create account"
         onPress={() => {
-          if (!canCreate || !race || !religion) return;
+          if (!canCreate || !race || !religion) {
+            setTried(true);
+            return;
+          }
           onCreate({ username: username.trim(), email, fullName, phone, age, race, religion, viaGoogle });
         }}
-        style={{ marginTop: spacing.lg, opacity: canCreate ? 1 : 0.4 }}
+        style={{ marginTop: spacing.lg, opacity: canCreate ? 1 : 0.6 }}
       />
+      {tried && !canCreate && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorTitle}>Almost there — still needed:</Text>
+          {missing.map((m) => (
+            <Text key={m} style={styles.errorItem}>
+              • {m}
+            </Text>
+          ))}
+          <Text style={styles.errorHintNote}>
+            If a field looks filled but is listed here, your browser may have auto-filled it — tap the
+            field and type the value yourself.
+          </Text>
+        </View>
+      )}
       <Text style={styles.activeHint}>
         Prototype only — details stay on this device. A production build would verify your MyKad and phone
         via eKYC.
@@ -908,12 +927,14 @@ function FormField({
   onChange,
   placeholder,
   secure,
+  autoComplete,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   secure?: boolean;
+  autoComplete?: 'username' | 'email' | 'new-password' | 'name' | 'tel' | 'off';
 }) {
   return (
     <View style={{ marginBottom: spacing.sm + 4 }}>
@@ -924,6 +945,7 @@ function FormField({
         placeholder={placeholder}
         placeholderTextColor={colors.faint}
         secureTextEntry={secure}
+        autoComplete={autoComplete}
         style={styles.input}
       />
     </View>
@@ -1777,5 +1799,30 @@ const styles = StyleSheet.create({
   },
   chipTextOn: {
     color: '#FFFFFF',
+  },
+  errorBox: {
+    backgroundColor: '#FDF0EC',
+    borderWidth: 1,
+    borderColor: '#E8B4A0',
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#9A3412',
+  },
+  errorItem: {
+    fontSize: 13,
+    color: '#9A3412',
+    marginTop: spacing.xs,
+    lineHeight: 18,
+  },
+  errorHintNote: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: spacing.sm,
+    lineHeight: 16,
   },
 });
