@@ -16,7 +16,6 @@ import {
   Product,
   products,
   PrsPeriod,
-  races,
   religions,
   returnsDisclaimer,
   Section,
@@ -819,7 +818,6 @@ export function CreateAccountScreen({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
-  const [race, setRace] = useState<string | null>(null);
   const [religion, setReligion] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
 
@@ -830,7 +828,6 @@ export function CreateAccountScreen({
   if (fullName.trim().length < 2) missing.push('Full name');
   if (phone.replace(/\D/g, '').length < 9) missing.push('Phone number — at least 9 digits');
   if (!(parseInt(age, 10) >= 16)) missing.push('Age — must be 16 or older');
-  if (race === null) missing.push('Race — tap one of the options');
   if (religion === null) missing.push('Religion — tap one of the options');
   const canCreate = missing.length === 0;
 
@@ -866,15 +863,6 @@ export function CreateAccountScreen({
       <FormField label="Phone number" value={phone} onChange={(t) => setPhone(t.replace(/[^\d+\s-]/g, ''))} placeholder="+60 12-345 6789" autoComplete="tel" />
       <FormField label="Age" value={age} onChange={(t) => setAge(t.replace(/\D/g, ''))} placeholder="e.g. 27" autoComplete="off" />
 
-      <Text style={styles.detailLabel}>RACE</Text>
-      <View style={styles.chipWrap}>
-        {races.map((r) => (
-          <Pressable key={r} onPress={() => setRace(r)} style={[styles.chip, race === r && styles.chipOn]}>
-            <Text style={[styles.chipText, race === r && styles.chipTextOn]}>{r}</Text>
-          </Pressable>
-        ))}
-      </View>
-
       <Text style={styles.detailLabel}>RELIGION</Text>
       <Text style={styles.faithAsk}>
         We ask this with respect — it lets JAGA show Shariah-compliant products where your faith requires
@@ -891,11 +879,11 @@ export function CreateAccountScreen({
       <PrimaryButton
         label="Create account"
         onPress={() => {
-          if (!canCreate || !race || !religion) {
+          if (!canCreate || !religion) {
             setTried(true);
             return;
           }
-          onCreate({ username: username.trim(), email, fullName, phone, age, race, religion, viaGoogle });
+          onCreate({ username: username.trim(), email, fullName, phone, age, religion, viaGoogle });
         }}
         style={{ marginTop: spacing.lg, opacity: canCreate ? 1 : 0.6 }}
       />

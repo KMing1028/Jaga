@@ -674,12 +674,9 @@ export type Account = {
   fullName: string;
   phone: string;
   age: string;
-  race: string;
   religion: string;
   viaGoogle: boolean;
 };
-
-export const races = ['Malay', 'Chinese', 'Indian', 'Bumiputera Sabah/Sarawak', 'Other'];
 
 export const religions = ['Islam', 'Buddhism', 'Christianity', 'Hinduism', 'Other', 'Prefer not to say'];
 
