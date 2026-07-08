@@ -1,0 +1,198 @@
+import React, { useState } from 'react';
+import { View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Account, EmergencyGoal, Loan, Occupation, Product, Section } from './src/data';
+import { TabBar, TabId } from './src/components';
+import {
+  BankLinkScreen,
+  CalculatorScreen,
+  CreateAccountScreen,
+  DashboardScreen,
+  EmergencyGoalScreen,
+  InsuranceScreen,
+  IntroScreen,
+  LinkedBank,
+  LoanDetailScreen,
+  LoansScreen,
+  OccupationScreen,
+  ProductScreen,
+  RetirementScreen,
+  SectionScreen,
+} from './src/screens';
+import { colors } from './src/theme';
+
+type Overlay =
+  | null
+  | { name: 'section'; section: Section }
+  | { name: 'product'; product: Product; fromSection?: Section }
+  | { name: 'loan'; loan: Loan }
+  | { name: 'bankLink' }
+  | { name: 'calculator' }
+  | { name: 'emergencyGoal'; product: Product };
+
+export default function App() {
+  const [started, setStarted] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [occupation, setOccupation] = useState<Occupation | null>(null);
+  const [pickingOccupation, setPickingOccupation] = useState(false);
+  const [tab, setTab] = useState<TabId>('home');
+  const [overlay, setOverlay] = useState<Overlay>(null);
+  const [activePlanIds, setActivePlanIds] = useState<string[]>([]);
+  const [linkedBank, setLinkedBank] = useState<LinkedBank | null>(null);
+  const [autoDebit, setAutoDebit] = useState(false);
+  const [emergencyGoal, setEmergencyGoal] = useState<EmergencyGoal | null>(null);
+
+  const togglePlan = (id: string) =>
+    setActivePlanIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+
+  const switchTab = (t: TabId) => {
+    setOverlay(null);
+    setTab(t);
+  };
+
+  // Emergency-fund products ask for a savings goal before the first visit
+  const openProduct = (product: Product, fromSection?: Section) => {
+    if (product.sectionId === 'emergency' && !emergencyGoal) {
+      setOverlay({ name: 'emergencyGoal', product });
+    } else {
+      setOverlay({ name: 'product', product, fromSection });
+    }
+  };
+
+  // ── onboarding: intro → account → occupation ──
+  if (!started) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <IntroScreen onStart={() => setStarted(true)} />
+      </>
+    );
+  }
+  if (!account) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <CreateAccountScreen onCreate={setAccount} onBack={() => setStarted(false)} />
+      </>
+    );
+  }
+  if (!occupation || pickingOccupation) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <OccupationScreen
+          onBack={() => (occupation ? setPickingOccupation(false) : setAccount(null))}
+          onSelect={(o) => {
+            setOccupation(o);
+            setPickingOccupation(false);
+            setOverlay(null);
+          }}
+        />
+      </>
+    );
+  }
+
+  // ── main app with tab bar ──
+  let content: React.ReactNode;
+  if (overlay?.name === 'emergencyGoal') {
+    content = (
+      <EmergencyGoalScreen
+        initial={emergencyGoal}
+        onSet={(g) => {
+          setEmergencyGoal(g);
+          setOverlay({ name: 'product', product: overlay.product });
+        }}
+        onBack={() => setOverlay(null)}
+      />
+    );
+  } else if (overlay?.name === 'product') {
+    content = (
+      <ProductScreen
+        product={overlay.product}
+        isActive={activePlanIds.includes(overlay.product.id)}
+        emergencyGoal={emergencyGoal}
+        onAdjustGoal={() => setOverlay({ name: 'emergencyGoal', product: overlay.product })}
+        onToggleActive={() => togglePlan(overlay.product.id)}
+        onBack={() =>
+          setOverlay(overlay.fromSection ? { name: 'section', section: overlay.fromSection } : null)
+        }
+      />
+    );
+  } else if (overlay?.name === 'section') {
+    content = (
+      <SectionScreen
+        section={overlay.section}
+        occupation={occupation}
+        activePlanIds={activePlanIds}
+        onBack={() => setOverlay(null)}
+        onOpenProduct={(product) => openProduct(product, overlay.section)}
+      />
+    );
+  } else if (overlay?.name === 'loan') {
+    content = <LoanDetailScreen loan={overlay.loan} onBack={() => setOverlay(null)} />;
+  } else if (overlay?.name === 'bankLink') {
+    content = (
+      <BankLinkScreen
+        linkedBank={linkedBank}
+        onLink={(b) => {
+          setLinkedBank(b);
+          setAutoDebit(true);
+          setOverlay(null);
+        }}
+        onUnlink={() => {
+          setLinkedBank(null);
+          setAutoDebit(false);
+          setOverlay(null);
+        }}
+        onBack={() => setOverlay(null)}
+      />
+    );
+  } else if (overlay?.name === 'calculator') {
+    content = <CalculatorScreen onBack={() => setOverlay(null)} />;
+  } else if (tab === 'home') {
+    content = (
+      <DashboardScreen
+        account={account}
+        occupation={occupation}
+        activePlanIds={activePlanIds}
+        linkedBank={linkedBank}
+        autoDebit={autoDebit}
+        onToggleAutoDebit={() => setAutoDebit((v) => !v)}
+        onOpenBankLink={() => setOverlay({ name: 'bankLink' })}
+        onOpenProduct={(product) => openProduct(product)}
+        onBrowse={switchTab}
+        onChangeOccupation={() => setPickingOccupation(true)}
+      />
+    );
+  } else if (tab === 'insurance') {
+    content = (
+      <InsuranceScreen
+        occupation={occupation}
+        activePlanIds={activePlanIds}
+        onOpenSection={(section) => setOverlay({ name: 'section', section })}
+      />
+    );
+  } else if (tab === 'retirement') {
+    content = (
+      <RetirementScreen
+        occupation={occupation}
+        religion={account.religion}
+        activePlanIds={activePlanIds}
+        onOpenProduct={(product) => openProduct(product)}
+        onOpenCalculator={() => setOverlay({ name: 'calculator' })}
+      />
+    );
+  } else {
+    content = (
+      <LoansScreen occupation={occupation} onOpenLoan={(loan) => setOverlay({ name: 'loan', loan })} />
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <StatusBar style="dark" />
+      <View style={{ flex: 1 }}>{content}</View>
+      <TabBar current={tab} onChange={switchTab} />
+    </View>
+  );
+}
