@@ -892,7 +892,13 @@ export function CreateAccountScreen({
       <FormField label="Username" value={username} onChange={setUsername} placeholder="e.g. abu_rider" autoComplete="username" />
       <FormField label="Email" value={email} onChange={setEmail} placeholder="you@email.com" autoComplete="email" />
       {!viaGoogle && (
-        <FormField label="Password" value={password} onChange={setPassword} placeholder="min. 6 characters" secure autoComplete="new-password" />
+        <>
+          {/* The password exists for signup UX only: there is no auth backend, it is
+              held in component state and never persisted (Account has no password
+              field). Real authentication + eKYC are required before production. */}
+          <FormField label="Password" value={password} onChange={setPassword} placeholder="min. 6 characters" secure autoComplete="new-password" />
+          <Text style={styles.passwordNote}>Prototype — no real login yet. Your password is not stored.</Text>
+        </>
       )}
 
       <Text style={styles.detailLabel}>PERSONAL DETAILS</Text>
@@ -1874,5 +1880,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
     marginTop: spacing.xs,
+  },
+  passwordNote: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: -spacing.xs,
+    marginBottom: spacing.sm,
   },
 });
