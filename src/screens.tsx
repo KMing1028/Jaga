@@ -6,6 +6,7 @@ import {
   appLogo,
   banks,
   burdenOptions,
+  DATA_AS_OF,
   disclaimer,
   EmergencyGoal,
   Loan,
@@ -281,6 +282,7 @@ export function InsuranceScreen({
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
       <Text style={styles.h1}>Insurance</Text>
       <Text style={styles.sub}>Cover for accidents, health and your work.</Text>
+      <Text style={styles.asOf}>Pricing as of {DATA_AS_OF} — indicative</Text>
       <View style={{ marginTop: spacing.lg }}>
         {insurance.map((s) => (
           <SectionCard
@@ -324,6 +326,7 @@ export function RetirementScreen({
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
       <Text style={styles.h1}>Retirement</Text>
       <Text style={styles.sub}>Small monthly amounts + free government top-ups.</Text>
+      <Text style={styles.asOf}>Pricing & returns as of {DATA_AS_OF} — indicative</Text>
       {isMuslim && (
         <Text style={styles.faithNote}>
           Showing Shariah-compliant options only, based on your profile.
@@ -1901,6 +1904,11 @@ const styles = StyleSheet.create({
     color: colors.muted,
     lineHeight: 18,
     textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  asOf: {
+    fontSize: 12,
+    color: colors.faint,
     marginTop: spacing.xs,
   },
   passwordNote: {

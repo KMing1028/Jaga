@@ -138,6 +138,11 @@ export const sections: Section[] = [
   },
 ];
 
+// Research snapshot date for all hard-coded pricing and fund returns below.
+export const DATA_AS_OF = '7 July 2026';
+
+// TODO: replace with live provider API — prices, availability and fund
+// returns below are a static research snapshot, not a feed.
 export const products: Product[] = [
   // ── SOCSO ──────────────────────────────────────────────
   {
