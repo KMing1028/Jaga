@@ -7,7 +7,7 @@ Built from the research in `../Problem_Statement_Outline.md` and
 ## Flow
 
 1. **Intro** — JAGA logo + what the app is (3M+ gig workers, <1 in 10 protected)
-2. **Create account** — Google link (mock) or manual: username, email, password, full name, phone, age, race, religion. Religion is asked respectfully and drives product filtering: Muslim users see only Shariah-compliant PRS funds; everyone else sees both series.
+2. **Create account** — Google link (mock) or manual: username, email, password, full name, phone, age, religion. Religion is asked respectfully and drives product filtering: Muslim users see only Shariah-compliant PRS funds; everyone else sees both series.
 3. **Occupation** — pick from 8 gig/freelance occupations
 3. **Tabs (bottom bar)**:
    - **Home** — dashboard: total monthly protection cost, insurance-areas-covered score (x/5, counting the five insurance categories), active plans acquired in-app, optional bank-account linking (auto-debit toggle), and suggestions for uncovered areas
