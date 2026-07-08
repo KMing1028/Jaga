@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Account, EmergencyGoal, Loan, Occupation, Product, Section } from './src/data';
 import { TabBar, TabId } from './src/components';
 import {
@@ -20,6 +21,8 @@ import {
   SectionScreen,
 } from './src/screens';
 import { colors } from './src/theme';
+
+const STORAGE_KEY = 'jaga:v1';
 
 type Overlay =
   | null
@@ -41,6 +44,53 @@ export default function App() {
   const [linkedBank, setLinkedBank] = useState<LinkedBank | null>(null);
   const [autoDebit, setAutoDebit] = useState(false);
   const [emergencyGoal, setEmergencyGoal] = useState<EmergencyGoal | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate persisted state on mount. The password is never part of this
+  // snapshot — Account carries no password field by design (see Task 4 note
+  // in CreateAccountScreen).
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (!raw) return; // first run — defaults apply
+        try {
+          const s = JSON.parse(raw);
+          if (typeof s.started === 'boolean') setStarted(s.started);
+          if (s.account) setAccount(s.account);
+          if (s.occupation) setOccupation(s.occupation);
+          if (Array.isArray(s.activePlanIds)) setActivePlanIds(s.activePlanIds);
+          if (s.linkedBank) setLinkedBank(s.linkedBank);
+          if (typeof s.autoDebit === 'boolean') setAutoDebit(s.autoDebit);
+          if (s.emergencyGoal) setEmergencyGoal(s.emergencyGoal);
+        } catch {
+          // corrupt store — fall back to defaults
+        }
+      })
+      .finally(() => setHydrated(true));
+  }, []);
+
+  // Write back whenever persisted values change (after hydration).
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal }),
+    ).catch(() => {});
+  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal]);
+
+  const resetApp = () => {
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    setStarted(false);
+    setAccount(null);
+    setOccupation(null);
+    setPickingOccupation(false);
+    setTab('home');
+    setOverlay(null);
+    setActivePlanIds([]);
+    setLinkedBank(null);
+    setAutoDebit(false);
+    setEmergencyGoal(null);
+  };
 
   const togglePlan = (id: string) =>
     setActivePlanIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -58,6 +108,15 @@ export default function App() {
       setOverlay({ name: 'product', product, fromSection });
     }
   };
+
+  // Avoid a flash of the intro while the persisted state loads.
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <StatusBar style="dark" />
+      </View>
+    );
+  }
 
   // ── onboarding: intro → account → occupation ──
   if (!started) {
@@ -162,6 +221,7 @@ export default function App() {
         onOpenProduct={(product) => openProduct(product)}
         onBrowse={switchTab}
         onChangeOccupation={() => setPickingOccupation(true)}
+        onLogout={resetApp}
       />
     );
   } else if (tab === 'insurance') {

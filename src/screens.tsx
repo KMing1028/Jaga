@@ -120,6 +120,7 @@ export function DashboardScreen({
   onOpenProduct,
   onBrowse,
   onChangeOccupation,
+  onLogout,
 }: {
   account: Account;
   occupation: Occupation;
@@ -131,6 +132,7 @@ export function DashboardScreen({
   onOpenProduct: (p: Product) => void;
   onBrowse: (tab: 'insurance' | 'retirement') => void;
   onChangeOccupation: () => void;
+  onLogout: () => void;
 }) {
   const active = products.filter((p) => activePlanIds.includes(p.id));
   const totalMonthly = active.reduce((sum, p) => sum + (p.monthlyValue ?? 0), 0);
@@ -161,9 +163,14 @@ export function DashboardScreen({
             {occupation.emoji} {occupation.label}
           </Text>
         </View>
-        <Pressable onPress={onChangeOccupation} hitSlop={8}>
-          <Text style={styles.changeLink}>Change</Text>
-        </Pressable>
+        <View style={{ alignItems: 'flex-end', gap: spacing.xs }}>
+          <Pressable onPress={onChangeOccupation} hitSlop={8}>
+            <Text style={styles.changeLink}>Change</Text>
+          </Pressable>
+          <Pressable onPress={onLogout} hitSlop={8}>
+            <Text style={styles.logoutLink}>Log out</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* protection summary */}
@@ -1189,6 +1196,11 @@ const styles = StyleSheet.create({
   changeLink: {
     color: colors.accent,
     fontSize: 14,
+    fontWeight: '600',
+  },
+  logoutLink: {
+    color: colors.muted,
+    fontSize: 12,
     fontWeight: '600',
   },
   summaryCard: {
