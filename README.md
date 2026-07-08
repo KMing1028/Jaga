@@ -10,7 +10,7 @@ Built from the research in `../Problem_Statement_Outline.md` and
 2. **Create account** — Google link (mock) or manual: username, email, password, full name, phone, age, race, religion. Religion is asked respectfully and drives product filtering: Muslim users see only Shariah-compliant PRS funds; everyone else sees both series.
 3. **Occupation** — pick from 8 gig/freelance occupations
 3. **Tabs (bottom bar)**:
-   - **Home** — dashboard: total monthly protection cost, areas-covered score (x/5), active plans acquired in-app, optional bank-account linking (auto-debit toggle), and suggestions for uncovered areas
+   - **Home** — dashboard: total monthly protection cost, insurance-areas-covered score (x/5, counting the five insurance categories), active plans acquired in-app, optional bank-account linking (auto-debit toggle), and suggestions for uncovered areas
    - **Insurance** — five sections: SOCSO · Personal Accident · Health & Hospital Income · Vehicle & E-Hailing · Work & Equipment (full catalogue from the team's Google Sheet, incl. PruBSN AnugerahMax, Zurich Auto Cover/Z-Rider, and Grab's Etiqa/Zurich daily covers as reference-only benchmarks)
    - **Retirement** — 8 options from the team's PRS sheet: i-Saraan, i-Saraan Plus (6.15% 2025 EPF dividend), 3 conventional AHAM PRS funds and 3 AHAM Aiiman Shariah PRS funds, each with real YTD/1Y/3Y returns (1Y default, from PPA's table as of 7 Jul 2026). Plus a retirement-calculator sub-menu and an **Emergency Fund** group with the AHAM Aiiman Money Market Fund — first tap runs a goal questionnaire (single = 3 months, married = 6, with children = 12 months of expenses).
    - **Loans** — micro-loans menu: TEKUN, BSN Micro, Direct Lending, Funding Societies, Boost Credit (indicative rates)

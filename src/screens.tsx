@@ -139,7 +139,10 @@ export function DashboardScreen({
   const quoteCount = active.filter((p) => p.monthlyValue == null).length;
 
   const coveredSections = new Set(active.map((p) => p.sectionId));
-  const score = coveredSections.size;
+  // Score counts insurance categories only, so the max matches the "/5" in
+  // the app copy; retirement/emergency plans still appear in the totals.
+  const insuranceSections = sections.filter((s) => s.group === 'insurance');
+  const score = insuranceSections.filter((s) => coveredSections.has(s.id)).length;
 
   const suggestions = products
     .filter(
@@ -187,9 +190,9 @@ export function DashboardScreen({
         </View>
         <View style={styles.scoreWrap}>
           <Text style={styles.scoreNum}>
-            {score}/{sections.length}
+            {score}/{insuranceSections.length}
           </Text>
-          <Text style={styles.scoreLabel}>areas covered</Text>
+          <Text style={styles.scoreLabel}>insurance areas</Text>
         </View>
       </View>
 
