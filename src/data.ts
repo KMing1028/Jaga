@@ -3,19 +3,15 @@ export const providerLogos = {
   kwsp: require('../assets/logos/kwsp.png'),
   tokiomarine: require('../assets/logos/tokiomarine.png'),
   policystreet: require('../assets/logos/policystreet.png'),
-  aia: require('../assets/logos/aia.png'),
   greateastern: require('../assets/logos/greateastern.png'),
-  manulife: require('../assets/logos/manulife.png'),
   allianz: require('../assets/logos/allianz.png'),
   etiqa: require('../assets/logos/etiqa.png'),
   zurich: require('../assets/logos/zurich.png'),
   prubsn: require('../assets/logos/prubsn.png'),
   tekun: require('../assets/logos/tekun.png'),
-  bsn: require('../assets/logos/bsn.png'),
   directlending: require('../assets/logos/directlending.png'),
-  fundingsocieties: require('../assets/logos/fundingsocieties.png'),
-  boost: require('../assets/logos/boost.png'),
   aham: require('../assets/logos/aham.png'),
+  microleap: require('../assets/logos/microleap.png'),
 };
 
 export const appLogo = require('../assets/logo.png');
@@ -143,6 +139,10 @@ export const DATA_AS_OF = '7 July 2026';
 
 // TODO: replace with live provider API — prices, availability and fund
 // returns below are a static research snapshot, not a feed.
+// ⚠️ OPEN DATA FLAG (9 Jul 2026): the AHAM PRS return figures below do not match
+// the PRS research sheet (e.g. sheet has Growth 1Y = 17.10% and tracks 5Y, not
+// 3Y; Aiiman Shariah Moderate/Conservative were never in the sheet). Re-verify
+// every figure with PPA before quoting real users.
 export const products: Product[] = [
   // ── SOCSO ──────────────────────────────────────────────
   {
@@ -211,25 +211,6 @@ export const products: Product[] = [
     relevantTo: 'all',
   },
   {
-    id: 'aia-flexpa',
-    sectionId: 'pa',
-    name: 'Flex PA Plus',
-    provider: 'AIA Malaysia',
-    initials: 'AIA',
-    brandColor: '#D31145',
-    logo: providerLogos.aia,
-    aimedFor: 'Anyone wanting customisable accident cover that grows with income',
-    monthly: 'from ~RM25/mo',
-    monthlyValue: 25,
-    estimated: true,
-    coverage: [
-      'Customisable personal accident cover',
-      'Optional medical & living-benefit riders',
-      'Adjust protection as your income grows',
-    ],
-    relevantTo: 'all',
-  },
-  {
     id: 'ge-classicpa',
     sectionId: 'pa',
     name: 'Classic PA',
@@ -270,27 +251,6 @@ export const products: Product[] = [
       'Optional Crisis TotalCare rider — lump sum for lost income during hospitalisation or critical illness',
     ],
     note: 'The first takaful plan marketed directly at the “no payslip” gig segment — its income-replacement rider answers the sick-leave gap. Premiums vary by age and plan; confirm with PruBSN.',
-    relevantTo: 'all',
-  },
-  {
-    id: 'manulife-hcash',
-    sectionId: 'health',
-    name: 'Hospital Cash Plan',
-    provider: 'Manulife',
-    initials: 'ML',
-    brandColor: '#00A758',
-    logo: providerLogos.manulife,
-    aimedFor: 'Gig workers with no employer-paid sick leave',
-    monthly: 'from RM60/mo',
-    monthlyValue: 60,
-    monthlyNote: 'entry plans from RM2/day',
-    badge: 'Income protection',
-    coverage: [
-      'Daily cash allowance ~RM200–500 per night hospitalised',
-      'Replaces lost income while you recover',
-      'Entry plans with no medical checkup',
-    ],
-    note: 'SOCSO only pays for work injuries — this covers income lost to any illness. Premiums eligible for up to RM4,000/yr tax relief.',
     relevantTo: 'all',
   },
   {
@@ -822,25 +782,6 @@ export const loans: Loan[] = [
     relevantTo: ['hawker', 'rider', 'ehailing'],
   },
   {
-    id: 'bsn-micro',
-    applyUrl: 'https://www.bsn.com.my/page/MyRinggit-i?language=en',
-    name: 'BSN Micro / MyRinggit-i',
-    provider: 'Bank Simpanan Nasional',
-    initials: 'BSN',
-    brandColor: '#00A19C',
-    logo: providerLogos.bsn,
-    aimedFor: 'Micro-entrepreneurs & self-employed wanting a bank-grade micro loan',
-    amount: 'RM5,000 – RM50,000',
-    rate: 'from ~4.5%/yr (est.)',
-    tenure: '1 – 7 years',
-    features: [
-      'National savings bank with branches everywhere in Malaysia',
-      'Islamic financing options available',
-      'Builds a formal credit record for future borrowing',
-    ],
-    relevantTo: 'all',
-  },
-  {
     id: 'directlending',
     applyUrl: 'https://directlending.com.my/personal-financing/',
     name: 'Gig Worker Personal Financing',
@@ -861,42 +802,22 @@ export const loans: Loan[] = [
     relevantTo: 'all',
   },
   {
-    id: 'fundingsocieties',
-    applyUrl: 'https://fundingsocieties.com.my/',
-    name: 'Micro Business Financing',
-    provider: 'Funding Societies',
-    initials: 'FS',
-    brandColor: '#4B32C3',
-    logo: providerLogos.fundingsocieties,
-    aimedFor: 'Freelancers & micro-businesses needing working capital between projects',
-    amount: 'RM5,000 – RM100,000',
-    rate: 'from ~8%/yr (est.)',
-    tenure: '1 – 18 months',
+    id: 'microleap',
+    name: 'MicroLEAP P2P Financing',
+    provider: 'MicroLEAP',
+    initials: 'ML',
+    brandColor: '#6CBE45',
+    logo: providerLogos.microleap,
+    aimedFor: 'Micro-scale freelancers & small businesses — the smallest ticket size among licensed P2P platforms',
+    amount: 'from RM1,000',
+    rate: 'Not published — confirm with MicroLEAP',
+    tenure: '3 – 36 months',
     features: [
-      'SEA’s largest SME digital financing platform',
-      'Short tenures — bridge a slow month or fund equipment',
-      'No collateral for smaller amounts',
+      'SC-licensed peer-to-peer financing platform',
+      'Shariah-compliant or conventional options',
+      'Built for individual micro-loans, not just SME facilities',
     ],
-    relevantTo: ['videographer', 'editor', 'designer', 'consultant', 'creator', 'hawker'],
-  },
-  {
-    id: 'boost-credit',
-    applyUrl: 'https://myboostbank.co/',
-    name: 'Boost Credit Micro-Loan',
-    provider: 'Boost Bank',
-    initials: 'BC',
-    brandColor: '#EA0029',
-    logo: providerLogos.boost,
-    aimedFor: 'Gig workers already using the Boost eWallet who want instant small credit',
-    amount: 'RM100 – RM5,000',
-    rate: 'from ~1.5%/mo (est.)',
-    tenure: '1 – 12 months',
-    features: [
-      'Fully in-app — disbursed to your eWallet in minutes',
-      'Micro amounts for emergencies, not big commitments',
-      'Repay from wallet balance as you earn',
-    ],
-    note: 'Fastest option for a small emergency top-up; watch the monthly rate on longer tenures.',
+    note: 'Borrower pricing isn’t public — investor returns of 1–18% p.a. imply a meaningful borrower cost. Confirm terms directly before applying. Application link pending confirmation with MicroLEAP.',
     relevantTo: 'all',
   },
 ];
