@@ -642,6 +642,7 @@ export type Account = {
   age: string;
   isMuslim: boolean; // data minimization: only what Shariah filtering needs, not full affiliation
   ekycStatus: 'unverified' | 'pending' | 'verified'; // mock — see EkycScreen
+  privacyConsentedAt: string | null; // ISO timestamp — PDPA consent audit trail
   viaGoogle: boolean;
 };
 

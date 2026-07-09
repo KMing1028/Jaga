@@ -564,6 +564,70 @@ export function RetirementScreen({
 }
 
 
+
+// ── 11c. Privacy Policy & Terms (prototype content) ──────
+
+function PolicyParagraph({ heading, body }: { heading: string; body: string }) {
+  return (
+    <View style={{ marginTop: spacing.md }}>
+      <Text style={styles.policyHeading}>{heading}</Text>
+      <Text style={styles.policyBody}>{body}</Text>
+    </View>
+  );
+}
+
+export function PrivacyPolicyScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
+      <BackLink onPress={onBack} />
+      <Text style={styles.h1}>Privacy Policy</Text>
+      <Text style={styles.sub}>JAGA prototype · last updated 10 July 2026</Text>
+      <PolicyParagraph
+        heading="What we collect"
+        body="Your name, username, email, phone number, age, whether you are Muslim, photos you provide for identity verification (MyKad and selfie), your occupation, risk-quiz answers, savings goals and amounts you report, and the financial products you select in the app."
+      />
+      <PolicyParagraph
+        heading="Why we collect it"
+        body="Identity details support know-your-customer (KYC) requirements for regulated insurance and PRS products. The Muslim yes/no answer is used only to show Shariah-compliant products where relevant. Occupation and risk answers are used to match and rank products for you."
+      />
+      <PolicyParagraph
+        heading="Where your data lives"
+        body="This is a prototype: everything is stored locally on this device only (AsyncStorage). Nothing is sent to a server, and JAGA has no backend. Deleting the app or using Log out → new account removes the data. eKYC photos are not uploaded, inspected or retained beyond the verification screen."
+      />
+      <PolicyParagraph
+        heading="Production notice"
+        body="A production version of JAGA would need a registered PDPA (Personal Data Protection Act 2010) data protection policy, a named data protection officer with a working contact, defined retention periods, and disclosure of every third party (insurers, fund managers, eKYC vendor, payment networks) that receives your data."
+      />
+    </ScrollView>
+  );
+}
+
+export function TermsOfServiceScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
+      <BackLink onPress={onBack} />
+      <Text style={styles.h1}>Terms of Service</Text>
+      <Text style={styles.sub}>JAGA prototype · last updated 10 July 2026</Text>
+      <PolicyParagraph
+        heading="What JAGA is"
+        body="JAGA is a student prototype that helps Malaysian gig workers discover insurance, retirement, emergency-savings and micro-loan products. It does not sell, broker or hold any financial product, and nothing in the app is financial advice."
+      />
+      <PolicyParagraph
+        heading="No real transactions"
+        body="Activating a plan, approving a payment consent, verifying identity and reporting saved amounts are demonstrations only. No money moves, no policy is issued, no account is opened, and no eKYC check is really performed."
+      />
+      <PolicyParagraph
+        heading="Data accuracy"
+        body="Prices, returns and product terms are a research snapshot with a stated as-of date and may be outdated or estimated. Always confirm directly with the provider before making a financial decision."
+      />
+      <PolicyParagraph
+        heading="Production notice"
+        body="Operating JAGA as a real service would require the relevant licences and registrations (e.g. financial adviser or insurance/takaful intermediary approval, Securities Commission requirements for PRS distribution) and regulator-reviewed terms. These terms are placeholders for that work."
+      />
+    </ScrollView>
+  );
+}
+
 // ── 11b. Mock eKYC ───────────────────────────────────────
 // Real eKYC requires a licensed identity-verification vendor (document OCR +
 // facial liveness matched against NRIC/MyKad data) and a backend to hold the
@@ -1354,6 +1418,8 @@ export function CreateAccountScreen({
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
   const [isMuslim, setIsMuslim] = useState<boolean | null>(null);
+  const [consented, setConsented] = useState(false);
+  const [showDoc, setShowDoc] = useState<null | 'privacy' | 'tos'>(null);
   const [tried, setTried] = useState(false);
 
   const missing: string[] = [];
@@ -1364,7 +1430,13 @@ export function CreateAccountScreen({
   if (phone.replace(/\D/g, '').length < 9) missing.push('Phone number — at least 9 digits');
   if (!(parseInt(age, 10) >= 16)) missing.push('Age — must be 16 or older');
   if (isMuslim === null) missing.push('Are you Muslim? — tap Yes or No');
+  if (!consented) missing.push('Agree to the Privacy Policy and Terms of Service');
   const canCreate = missing.length === 0;
+
+  if (showDoc) {
+    const Doc = showDoc === 'privacy' ? PrivacyPolicyScreen : TermsOfServiceScreen;
+    return <Doc onBack={() => setShowDoc(null)} />;
+  }
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
@@ -1426,6 +1498,29 @@ export function CreateAccountScreen({
         ))}
       </View>
 
+      <Pressable
+        onPress={() => setConsented((v) => !v)}
+        style={styles.consentCheckRow}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: consented }}
+        accessibilityLabel="Agree to the Privacy Policy and Terms of Service"
+      >
+        <Text style={[styles.consentCheckBox, consented && { color: colors.accent }]}>
+          {consented ? '☑' : '☐'}
+        </Text>
+        <Text style={styles.consentCheckText}>
+          I have read and agree to the{' '}
+          <Text style={styles.consentLink} onPress={() => setShowDoc('privacy')}>
+            Privacy Policy
+          </Text>{' '}
+          and{' '}
+          <Text style={styles.consentLink} onPress={() => setShowDoc('tos')}>
+            Terms of Service
+          </Text>
+          .
+        </Text>
+      </Pressable>
+
       <PrimaryButton
         label="Create account"
         onPress={() => {
@@ -1433,7 +1528,17 @@ export function CreateAccountScreen({
             setTried(true);
             return;
           }
-          onCreate({ username: username.trim(), email, fullName, phone, age, isMuslim, viaGoogle, ekycStatus: 'unverified' });
+          onCreate({
+            username: username.trim(),
+            email,
+            fullName,
+            phone,
+            age,
+            isMuslim,
+            viaGoogle,
+            ekycStatus: 'unverified',
+            privacyConsentedAt: new Date().toISOString(),
+          });
         }}
         style={{ marginTop: spacing.lg, opacity: canCreate ? 1 : 0.6 }}
       />
@@ -2486,6 +2591,39 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.muted,
     marginBottom: spacing.sm,
+  },
+  consentCheckRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+    marginTop: spacing.lg,
+  },
+  consentCheckBox: {
+    fontSize: 20,
+    color: colors.faint,
+    lineHeight: 24,
+  },
+  consentCheckText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink,
+    lineHeight: 19,
+  },
+  consentLink: {
+    color: colors.accent,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  policyHeading: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  policyBody: {
+    fontSize: 14,
+    color: colors.muted,
+    lineHeight: 21,
+    marginTop: spacing.xs,
   },
   loginError: {
     fontSize: 13,
