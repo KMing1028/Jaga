@@ -9,6 +9,7 @@ import {
   CalculatorScreen,
   CreateAccountScreen,
   DashboardScreen,
+  EkycScreen,
   EmergencyGoalScreen,
   InsuranceScreen,
   IntroScreen,
@@ -34,6 +35,7 @@ type Overlay =
   | { name: 'bankLink'; forProduct?: Product; fromSection?: Section }
   | { name: 'calculator' }
   | { name: 'riskQuiz' }
+  | { name: 'ekyc'; forProduct?: Product; fromSection?: Section }
   | { name: 'emergencyGoal'; product: Product };
 
 export default function App() {
@@ -69,6 +71,7 @@ export default function App() {
               s.account.isMuslim = s.account.religion === 'Islam';
               delete s.account.religion;
             }
+            if (!s.account.ekycStatus) s.account.ekycStatus = 'unverified';
             setAccount(s.account);
           }
           if (s.occupation) setOccupation(s.occupation);
@@ -125,9 +128,17 @@ export default function App() {
   const isInsuranceProduct = (p: Product) =>
     sections.find((s) => s.id === p.sectionId)?.group === 'insurance';
 
-  // Insurance activation requires a DuitNow AutoDebit consent; retirement stays optional.
+  // PRS funds are SC-regulated; insurance products likewise require verified identity.
+  const isPrsFund = (p: Product) => p.sectionId === 'retirement' && p.provider === 'AHAM Asset Management';
+
+  // Activation preconditions: eKYC for insurance + PRS, then DuitNow consent for
+  // insurance. Both gates apply — one never replaces the other.
   const requestToggle = (product: Product, fromSection?: Section) => {
     const activating = !activePlanIds.includes(product.id);
+    if (activating && (isInsuranceProduct(product) || isPrsFund(product)) && account?.ekycStatus !== 'verified') {
+      setOverlay({ name: 'ekyc', forProduct: product, fromSection });
+      return;
+    }
     if (activating && isInsuranceProduct(product) && !linkedBank) {
       setOverlay({ name: 'bankLink', forProduct: product, fromSection });
       return;
@@ -178,6 +189,14 @@ export default function App() {
       <>
         <StatusBar style="dark" />
         <CreateAccountScreen onCreate={setAccount} onBack={() => setStarted(false)} />
+      </>
+    );
+  }
+  if (account.ekycStatus !== 'verified' && !occupation) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <EkycScreen onVerified={() => setAccount({ ...account, ekycStatus: 'verified' })} />
       </>
     );
   }
@@ -269,6 +288,18 @@ export default function App() {
         savedGoal={retirementGoal}
         onSaveGoal={setRetirementGoal}
         onBack={() => setOverlay(null)}
+      />
+    );
+  } else if (overlay?.name === 'ekyc') {
+    const back = overlay.forProduct
+      ? { name: 'product' as const, product: overlay.forProduct, fromSection: overlay.fromSection }
+      : null;
+    content = (
+      <EkycScreen
+        onVerified={() => {
+          setAccount(account ? { ...account, ekycStatus: 'verified' } : account);
+          setOverlay(back);
+        }}
       />
     );
   } else if (overlay?.name === 'riskQuiz') {

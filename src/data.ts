@@ -641,6 +641,7 @@ export type Account = {
   phone: string;
   age: string;
   isMuslim: boolean; // data minimization: only what Shariah filtering needs, not full affiliation
+  ekycStatus: 'unverified' | 'pending' | 'verified'; // mock — see EkycScreen
   viaGoogle: boolean;
 };
 

@@ -563,6 +563,113 @@ export function RetirementScreen({
   );
 }
 
+
+// ── 11b. Mock eKYC ───────────────────────────────────────
+// Real eKYC requires a licensed identity-verification vendor (document OCR +
+// facial liveness matched against NRIC/MyKad data) and a backend to hold the
+// result securely. This screen demonstrates the UX only — it never inspects
+// the images and always resolves to "verified".
+
+export function EkycScreen({ onVerified }: { onVerified: () => void }) {
+  const [mykadPicked, setMykadPicked] = useState(false);
+  const [selfiePicked, setSelfiePicked] = useState(false);
+  const [phase, setPhase] = useState<'capture' | 'verifying' | 'done'>('capture');
+
+  const pick = async (which: 'mykad' | 'selfie') => {
+    try {
+      const ImagePicker = await import('expo-image-picker');
+      const res = await ImagePicker.launchImageLibraryAsync({ quality: 0.5 });
+      if (!res.canceled) (which === 'mykad' ? setMykadPicked : setSelfiePicked)(true);
+    } catch {
+      // picker unavailable (e.g. permissions) — let the user proceed anyway in the prototype
+      (which === 'mykad' ? setMykadPicked : setSelfiePicked)(true);
+    }
+  };
+
+  const startVerify = () => {
+    setPhase('verifying');
+    // not a real check — fixed delay, always succeeds (prototype)
+    setTimeout(() => setPhase('done'), 2500);
+  };
+
+  if (phase === 'verifying') {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.introSlideEmoji}>🪪</Text>
+        <Text style={styles.h1}>Verifying…</Text>
+        <Text style={[styles.sub, { textAlign: 'center' }]}>
+          Checking your MyKad photo and selfie. This usually takes a few seconds.
+        </Text>
+      </View>
+    );
+  }
+
+  if (phase === 'done') {
+    return (
+      <View style={[styles.screen, { justifyContent: 'center' }]}>
+        <View style={styles.riskResultCard}>
+          <Text style={styles.riskResultEmoji}>✅</Text>
+          <Text style={styles.riskResultLabel}>Identity verified</Text>
+          <Text style={styles.riskResultBlurb}>
+            Verified (prototype — no real check performed). A production build would verify your MyKad
+            and selfie with a licensed eKYC vendor.
+          </Text>
+        </View>
+        <PrimaryButton label="Continue" onPress={onVerified} style={{ marginTop: spacing.lg }} />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
+      <Text style={styles.h1}>🪪 Verify your identity</Text>
+      <Text style={styles.sub}>
+        Insurance and PRS products are regulated — providers must verify who you are before a plan can
+        activate.
+      </Text>
+
+      <Text style={styles.detailLabel}>TWO QUICK CAPTURES</Text>
+      <Pressable
+        onPress={() => pick('mykad')}
+        style={[styles.bankRow, mykadPicked && styles.bankRowOn]}
+        accessibilityRole="button"
+        accessibilityLabel="Scan MyKad front"
+      >
+        <Text style={styles.occEmoji}>🪪</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.bankRowName}>Scan MyKad (front)</Text>
+          <Text style={styles.bankHint}>Clear photo, all four corners visible</Text>
+        </View>
+        <Text style={[styles.bankRadio, mykadPicked && { color: colors.accent }]}>{mykadPicked ? '✓' : '○'}</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => pick('selfie')}
+        style={[styles.bankRow, selfiePicked && styles.bankRowOn]}
+        accessibilityRole="button"
+        accessibilityLabel="Take a selfie"
+      >
+        <Text style={styles.occEmoji}>🤳</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.bankRowName}>Take a selfie</Text>
+          <Text style={styles.bankHint}>Good light, no cap or sunglasses</Text>
+        </View>
+        <Text style={[styles.bankRadio, selfiePicked && { color: colors.accent }]}>{selfiePicked ? '✓' : '○'}</Text>
+      </Pressable>
+
+      <PrimaryButton
+        label="Verify identity"
+        onPress={() => {
+          if (mykadPicked && selfiePicked) startVerify();
+        }}
+        style={{ marginTop: spacing.lg, opacity: mykadPicked && selfiePicked ? 1 : 0.4 }}
+      />
+      <Text style={styles.activeHint}>
+        Prototype only — images are not uploaded, inspected or stored beyond this screen.
+      </Text>
+    </ScrollView>
+  );
+}
+
 // ── 5b. Risk profiling quiz (gates the retirement tab) ───
 
 export function RiskQuizScreen({
@@ -1326,7 +1433,7 @@ export function CreateAccountScreen({
             setTried(true);
             return;
           }
-          onCreate({ username: username.trim(), email, fullName, phone, age, isMuslim, viaGoogle });
+          onCreate({ username: username.trim(), email, fullName, phone, age, isMuslim, viaGoogle, ekycStatus: 'unverified' });
         }}
         style={{ marginTop: spacing.lg, opacity: canCreate ? 1 : 0.6 }}
       />
