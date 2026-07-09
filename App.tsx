@@ -7,6 +7,7 @@ import { TabBar, TabId } from './src/components';
 import {
   BankLinkScreen,
   CalculatorScreen,
+  ComplaintsScreen,
   CreateAccountScreen,
   DashboardScreen,
   EkycScreen,
@@ -36,6 +37,7 @@ type Overlay =
   | { name: 'calculator' }
   | { name: 'riskQuiz' }
   | { name: 'ekyc'; forProduct?: Product; fromSection?: Section }
+  | { name: 'complaints' }
   | { name: 'emergencyGoal'; product: Product };
 
 export default function App() {
@@ -302,6 +304,8 @@ export default function App() {
         }}
       />
     );
+  } else if (overlay?.name === 'complaints') {
+    content = <ComplaintsScreen onBack={() => setOverlay(null)} />;
   } else if (overlay?.name === 'riskQuiz') {
     content = (
       <RiskQuizScreen
@@ -325,6 +329,7 @@ export default function App() {
         onOpenProduct={(product) => openProduct(product)}
         onBrowse={switchTab}
         onChangeOccupation={() => setPickingOccupation(true)}
+        onOpenComplaints={() => setOverlay({ name: 'complaints' })}
         onLogout={() => setLoggedOut(true)}
       />
     );

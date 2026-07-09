@@ -231,6 +231,7 @@ export function DashboardScreen({
   onOpenProduct,
   onBrowse,
   onChangeOccupation,
+  onOpenComplaints,
   onLogout,
 }: {
   account: Account;
@@ -243,6 +244,7 @@ export function DashboardScreen({
   onOpenProduct: (p: Product) => void;
   onBrowse: (tab: 'insurance' | 'retirement') => void;
   onChangeOccupation: () => void;
+  onOpenComplaints: () => void;
   onLogout: () => void;
 }) {
   const active = products.filter((p) => activePlanIds.includes(p.id));
@@ -280,6 +282,9 @@ export function DashboardScreen({
         <View style={{ alignItems: 'flex-end', gap: spacing.xs }}>
           <Pressable onPress={onChangeOccupation} hitSlop={8}>
             <Text style={styles.changeLink}>Change</Text>
+          </Pressable>
+          <Pressable onPress={onOpenComplaints} hitSlop={8} accessibilityRole="button" accessibilityLabel="Complaints and help">
+            <Text style={styles.logoutLink}>Help</Text>
           </Pressable>
           <Pressable onPress={onLogout} hitSlop={8}>
             <Text style={styles.logoutLink}>Log out</Text>
@@ -565,6 +570,42 @@ export function RetirementScreen({
 }
 
 
+
+
+// ── 11d. Complaints & redress ────────────────────────────
+// TODO: confirm exact redress body per product category before production
+// (e.g. OFS for insurance disputes, SC complaints channel for PRS).
+
+export function ComplaintsScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
+      <BackLink onPress={onBack} />
+      <Text style={styles.h1}>🗣️ Complaints & help</Text>
+      <Text style={styles.sub}>Something wrong with a plan, a payment or this app? Start here.</Text>
+
+      <Text style={styles.detailLabel}>CONTACT JAGA</Text>
+      <View style={styles.consentCard}>
+        <ConsentRow label="Email" value="support@jaga.example (prototype contact)" />
+        <ConsentRow label="Phone" value="+60 3-0000 0000 (prototype contact)" />
+        <ConsentRow label="Hours" value="Mon–Fri, 9am–6pm MYT" />
+      </View>
+
+      <Text style={styles.detailLabel}>IF WE CAN’T RESOLVE IT</Text>
+      <View style={styles.disclosureBox}>
+        <Text style={styles.disclosureText}>
+          You can escalate financial disputes to the independent redress body for that product type — for
+          example the Ombudsman for Financial Services (OFS) for insurance/takaful disputes, or the
+          Securities Commission Malaysia’s complaints channel for PRS. A production version of JAGA must
+          name the confirmed body, eligibility limits and time bars for each product category here.
+        </Text>
+      </View>
+
+      <Text style={styles.activeHint}>
+        Prototype contact details — replace with a staffed channel before launch.
+      </Text>
+    </ScrollView>
+  );
+}
 
 // ── 11c. Privacy Policy & Terms (prototype content) ──────
 
