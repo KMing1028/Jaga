@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Account, EmergencyGoal, Loan, Occupation, Product, RiskCategory, Section } from './src/data';
+import { Account, EmergencyGoal, Loan, Occupation, Product, RiskCategory, Section, sections } from './src/data';
 import { TabBar, TabId } from './src/components';
 import {
   BankLinkScreen,
@@ -31,7 +31,7 @@ type Overlay =
   | { name: 'section'; section: Section }
   | { name: 'product'; product: Product; fromSection?: Section }
   | { name: 'loan'; loan: Loan }
-  | { name: 'bankLink' }
+  | { name: 'bankLink'; forProduct?: Product; fromSection?: Section }
   | { name: 'calculator' }
   | { name: 'riskQuiz' }
   | { name: 'emergencyGoal'; product: Product };
@@ -107,6 +107,19 @@ export default function App() {
   const switchTab = (t: TabId) => {
     setOverlay(null);
     setTab(t);
+  };
+
+  const isInsuranceProduct = (p: Product) =>
+    sections.find((s) => s.id === p.sectionId)?.group === 'insurance';
+
+  // Insurance activation requires a DuitNow AutoDebit consent; retirement stays optional.
+  const requestToggle = (product: Product, fromSection?: Section) => {
+    const activating = !activePlanIds.includes(product.id);
+    if (activating && isInsuranceProduct(product) && !linkedBank) {
+      setOverlay({ name: 'bankLink', forProduct: product, fromSection });
+      return;
+    }
+    togglePlan(product.id);
   };
 
   // Emergency-fund products ask for a savings goal before the first visit
@@ -189,9 +202,12 @@ export default function App() {
       <ProductScreen
         product={overlay.product}
         isActive={activePlanIds.includes(overlay.product.id)}
+        paymentRequired={
+          isInsuranceProduct(overlay.product) && !linkedBank && !overlay.product.referenceOnly
+        }
         emergencyGoal={emergencyGoal}
         onAdjustGoal={() => setOverlay({ name: 'emergencyGoal', product: overlay.product })}
-        onToggleActive={() => togglePlan(overlay.product.id)}
+        onToggleActive={() => requestToggle(overlay.product, overlay.fromSection)}
         onBack={() =>
           setOverlay(overlay.fromSection ? { name: 'section', section: overlay.fromSection } : null)
         }
@@ -210,20 +226,24 @@ export default function App() {
   } else if (overlay?.name === 'loan') {
     content = <LoanDetailScreen loan={overlay.loan} onBack={() => setOverlay(null)} />;
   } else if (overlay?.name === 'bankLink') {
+    const returnTo = overlay.forProduct
+      ? { name: 'product' as const, product: overlay.forProduct, fromSection: overlay.fromSection }
+      : null;
     content = (
       <BankLinkScreen
         linkedBank={linkedBank}
+        forProductName={overlay.forProduct?.name}
         onLink={(b) => {
           setLinkedBank(b);
           setAutoDebit(true);
-          setOverlay(null);
+          setOverlay(returnTo);
         }}
         onUnlink={() => {
           setLinkedBank(null);
           setAutoDebit(false);
-          setOverlay(null);
+          setOverlay(returnTo);
         }}
-        onBack={() => setOverlay(null)}
+        onBack={() => setOverlay(returnTo)}
       />
     );
   } else if (overlay?.name === 'calculator') {

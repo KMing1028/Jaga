@@ -241,7 +241,7 @@ export function DashboardScreen({
           <View style={[styles.bankDot, { backgroundColor: banks.find((b) => b.id === linkedBank.bankId)?.color ?? colors.accent }]} />
           <View style={{ flex: 1 }}>
             <Text style={styles.bankName}>
-              {banks.find((b) => b.id === linkedBank.bankId)?.name ?? 'Bank'} ••{linkedBank.last4}
+              DuitNow AutoDebit · {banks.find((b) => b.id === linkedBank.bankId)?.name ?? 'Bank'} · ref ••{linkedBank.last4}
             </Text>
             <Text style={styles.bankHint}>
               {autoDebit ? 'Auto-debit on — plans charged monthly' : 'Auto-debit off — pay manually anytime'}
@@ -262,9 +262,10 @@ export function DashboardScreen({
         <Pressable onPress={onOpenBankLink} style={styles.bankLinkPrompt}>
           <Text style={styles.bankLinkIcon}>🏦</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bankName}>Link your bank account</Text>
+            <Text style={styles.bankName}>Set up payment · DuitNow AutoDebit</Text>
             <Text style={styles.bankHint}>
-              Optional — auto-pay plans monthly from your gig income. You can always bank in manually instead.
+              Required before insurance plans can activate. Optional for retirement — you can always bank
+              in manually instead.
             </Text>
           </View>
           <Text style={styles.chev}>›</Text>
@@ -620,6 +621,7 @@ export function SectionScreen({
 export function ProductScreen({
   product,
   isActive,
+  paymentRequired,
   emergencyGoal,
   onAdjustGoal,
   onToggleActive,
@@ -627,6 +629,7 @@ export function ProductScreen({
 }: {
   product: Product;
   isActive: boolean;
+  paymentRequired?: boolean; // insurance products need a DuitNow AutoDebit consent first
   emergencyGoal?: EmergencyGoal | null;
   onAdjustGoal?: () => void;
   onToggleActive: () => void;
@@ -738,6 +741,11 @@ export function ProductScreen({
           onPress={onToggleActive}
           style={{ marginTop: spacing.lg }}
         />
+      )}
+      {paymentRequired && !isActive && !product.referenceOnly && (
+        <Text style={styles.activeHint}>
+          Insurance payments are collected by DuitNow AutoDebit — you’ll approve a one-time consent first.
+        </Text>
       )}
       {isActive && !product.referenceOnly && (
         <Text style={styles.activeHint}>
@@ -853,35 +861,45 @@ export function LoanDetailScreen({ loan, onBack }: { loan: Loan; onBack: () => v
 
 export function BankLinkScreen({
   linkedBank,
+  forProductName,
   onLink,
   onUnlink,
   onBack,
 }: {
   linkedBank: LinkedBank | null;
+  forProductName?: string; // set when consent is required to activate an insurance plan
   onLink: (b: LinkedBank) => void;
   onUnlink: () => void;
   onBack: () => void;
 }) {
   const [bankId, setBankId] = useState<string | null>(linkedBank?.bankId ?? null);
-  const [account, setAccount] = useState('');
-  const canLink = bankId && account.replace(/\D/g, '').length >= 6;
+  const bank = banks.find((b) => b.id === bankId);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
       <BackLink onPress={onBack} />
-      <Text style={styles.h1}>🏦 Link bank account</Text>
+      <Text style={styles.h1}>💳 DuitNow AutoDebit</Text>
       <Text style={styles.sub}>
-        Optional. Linking lets JAGA auto-debit your plans monthly — small amounts, right after you get paid.
-        You can skip this and bank in manually (e.g. top up PRS) whenever you want.
+        A one-time consent that lets JAGA collect your plan payments automatically — small amounts, right
+        after you get paid. Required for insurance plans; optional for retirement, where you can always
+        bank in manually.
       </Text>
+
+      {forProductName && (
+        <View style={styles.consentRequiredBox}>
+          <Text style={styles.consentRequiredText}>
+            Payment consent is needed before “{forProductName}” can activate.
+          </Text>
+        </View>
+      )}
 
       {linkedBank && (
         <View style={styles.linkedBox}>
           <Text style={styles.linkedText}>
-            Linked: {banks.find((b) => b.id === linkedBank.bankId)?.name} ••{linkedBank.last4}
+            Active consent: {banks.find((b) => b.id === linkedBank.bankId)?.name} · ref ••{linkedBank.last4}
           </Text>
-          <Pressable onPress={onUnlink} hitSlop={8}>
-            <Text style={styles.unlinkText}>Unlink</Text>
+          <Pressable onPress={onUnlink} hitSlop={8} accessibilityRole="button" accessibilityLabel="Revoke consent">
+            <Text style={styles.unlinkText}>Revoke</Text>
           </Pressable>
         </View>
       )}
@@ -901,30 +919,39 @@ export function BankLinkScreen({
         </Pressable>
       ))}
 
-      <Text style={styles.detailLabel}>ACCOUNT NUMBER</Text>
-      <TextInput
-        value={account}
-        onChangeText={(t) => setAccount(t.replace(/[^\d\s-]/g, ''))}
-        placeholder="e.g. 1234 5678 9012"
-        placeholderTextColor={colors.faint}
-        keyboardType="number-pad"
-        style={styles.input}
-      />
+      <Text style={styles.detailLabel}>CONSENT SUMMARY</Text>
+      <View style={styles.consentCard}>
+        <ConsentRow label="Payee" value="JAGA (prototype)" />
+        <ConsentRow label="Type" value="Recurring + ad-hoc collections" />
+        <ConsentRow label="Frequency" value="Monthly, on your payout day" />
+        <ConsentRow label="Monthly cap" value="RM300 — nothing above this can be pulled" />
+        <ConsentRow label="Cancel" value="Revoke anytime in JAGA or your banking app" />
+      </View>
 
       <PrimaryButton
-        label={linkedBank ? 'Update linked account' : 'Link account'}
+        label={bank ? `Approve consent with ${bank.name}` : 'Choose a bank to continue'}
         onPress={() => {
-          if (!canLink || !bankId) return;
-          const digits = account.replace(/\D/g, '');
-          onLink({ bankId, last4: digits.slice(-4) });
+          if (!bankId) return;
+          // mock consent reference — a real flow would round-trip PayNet / the bank here
+          const ref = String(Math.floor(1000 + Math.random() * 9000));
+          onLink({ bankId, last4: ref });
         }}
-        style={{ marginTop: spacing.lg, opacity: canLink ? 1 : 0.4 }}
+        style={{ marginTop: spacing.lg, opacity: bankId ? 1 : 0.4 }}
       />
       <Text style={styles.activeHint}>
-        Prototype only — no real bank connection is made. In production this would use an FPX / DuitNow
-        auto-debit consent.
+        Prototype only — no real PayNet/FPX connection is made. In production this button would hand off
+        to your bank to authorise the DuitNow AutoDebit consent.
       </Text>
     </ScrollView>
+  );
+}
+
+function ConsentRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.consentRow}>
+      <Text style={styles.consentLabel}>{label}</Text>
+      <Text style={styles.consentValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -2161,5 +2188,48 @@ const styles = StyleSheet.create({
   },
   quizDotOn: {
     backgroundColor: colors.accent,
+  },
+
+  // DuitNow AutoDebit consent
+  consentRequiredBox: {
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  consentRequiredText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink,
+    lineHeight: 18,
+  },
+  consentCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: spacing.md,
+  },
+  consentLabel: {
+    width: 92,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.muted,
+  },
+  consentValue: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink,
+    lineHeight: 18,
   },
 });
