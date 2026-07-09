@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Account, EmergencyGoal, Loan, Occupation, Product, RetirementGoal, RiskCategory, Section, sections } from './src/data';
@@ -19,7 +19,9 @@ import {
   LoginScreen,
   LoansScreen,
   OccupationScreen,
+  PinLockScreen,
   ProductScreen,
+  SetPinScreen,
   RetirementScreen,
   RiskQuizScreen,
   SectionScreen,
@@ -27,6 +29,9 @@ import {
 import { colors } from './src/theme';
 
 const STORAGE_KEY = 'jaga:v1';
+// Re-require the PIN after this long in the background. globalThis override is a
+// test seam only — production keeps the 5-minute default.
+const LOCK_TIMEOUT_MS = (globalThis as { __JAGA_LOCK_TIMEOUT_MS__?: number }).__JAGA_LOCK_TIMEOUT_MS__ ?? 5 * 60 * 1000;
 
 type Overlay =
   | null
@@ -55,6 +60,8 @@ export default function App() {
   const [savedAmounts, setSavedAmounts] = useState<Record<string, number>>({});
   const [retirementGoal, setRetirementGoal] = useState<RetirementGoal | null>(null);
   const [loggedOut, setLoggedOut] = useState(false);
+  const [pin, setPin] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   // Hydrate persisted state on mount. The password is never part of this
@@ -83,6 +90,10 @@ export default function App() {
           if (s.emergencyGoal) setEmergencyGoal(s.emergencyGoal);
           if (typeof s.loggedOut === 'boolean') setLoggedOut(s.loggedOut);
           if (s.riskProfile) setRiskProfile(s.riskProfile);
+          if (typeof s.pin === 'string' && s.pin.length >= 4) {
+            setPin(s.pin);
+            setLocked(true); // PIN set -> always ask on launch
+          }
           if (s.savedAmounts && typeof s.savedAmounts === 'object') setSavedAmounts(s.savedAmounts);
           if (s.retirementGoal) setRetirementGoal(s.retirementGoal);
         } catch {
@@ -97,9 +108,9 @@ export default function App() {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal }),
+      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal, pin }),
     ).catch(() => {});
-  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal]);
+  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal, pin]);
 
   const resetApp = () => {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
@@ -117,7 +128,29 @@ export default function App() {
     setRiskProfile(null);
     setSavedAmounts({});
     setRetirementGoal(null);
+    setPin(null);
+    setLocked(false);
   };
+
+  // Session timeout: returning from >LOCK_TIMEOUT_MS in the background re-locks.
+  const backgroundedAt = useRef<number | null>(null);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background' || state === 'inactive') {
+        backgroundedAt.current = Date.now();
+      } else if (state === 'active') {
+        if (
+          pin &&
+          backgroundedAt.current !== null &&
+          Date.now() - backgroundedAt.current > LOCK_TIMEOUT_MS
+        ) {
+          setLocked(true);
+        }
+        backgroundedAt.current = null;
+      }
+    });
+    return () => sub.remove();
+  }, [pin]);
 
   const togglePlan = (id: string) =>
     setActivePlanIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -163,6 +196,16 @@ export default function App() {
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <StatusBar style="dark" />
       </View>
+    );
+  }
+
+  // App lock: a set PIN must be entered on launch and after session timeout.
+  if (account && !loggedOut && pin && locked) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <PinLockScreen pin={pin} onUnlock={() => setLocked(false)} />
+      </>
     );
   }
 
@@ -214,6 +257,16 @@ export default function App() {
             setOverlay(null);
           }}
         />
+      </>
+    );
+  }
+
+  // First launch with this feature (or fresh onboarding): require a PIN before the tabs.
+  if (!pin) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <SetPinScreen onSet={setPin} />
       </>
     );
   }

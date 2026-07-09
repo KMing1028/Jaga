@@ -572,6 +572,104 @@ export function RetirementScreen({
 
 
 
+
+// ── 11e. App lock (PIN) ──────────────────────────────────
+// NOTE: a production build should keep this secret in the device
+// keychain/secure enclave and offer biometrics (expo-local-authentication),
+// not a plain PIN in AsyncStorage.
+
+function PinPad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={(t) => onChange(t.replace(/\D/g, '').slice(0, 6))}
+      keyboardType="number-pad"
+      secureTextEntry
+      autoFocus
+      placeholder="••••"
+      placeholderTextColor={colors.faint}
+      style={[styles.input, styles.pinInput]}
+      accessibilityLabel="PIN"
+    />
+  );
+}
+
+export function SetPinScreen({ onSet }: { onSet: (pin: string) => void }) {
+  const [pin, setPin] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [stage, setStage] = useState<'enter' | 'confirm'>('enter');
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <View style={[styles.screen, { justifyContent: 'center' }]}>
+      <Text style={styles.h1}>🔒 Set an app PIN</Text>
+      <Text style={styles.sub}>
+        {stage === 'enter'
+          ? 'Choose a 4–6 digit PIN. JAGA will ask for it when you open the app or return after a break.'
+          : 'Enter the same PIN again to confirm.'}
+      </Text>
+      <View style={{ marginTop: spacing.lg }}>
+        {stage === 'enter' ? <PinPad value={pin} onChange={setPin} /> : <PinPad value={confirm} onChange={setConfirm} />}
+      </View>
+      {error && <Text style={styles.loginError}>{error}</Text>}
+      <PrimaryButton
+        label={stage === 'enter' ? 'Continue' : 'Confirm PIN'}
+        onPress={() => {
+          if (stage === 'enter') {
+            if (pin.length < 4) {
+              setError('PIN must be at least 4 digits.');
+              return;
+            }
+            setError(null);
+            setStage('confirm');
+          } else {
+            if (confirm !== pin) {
+              setError('PINs don’t match — try again.');
+              setConfirm('');
+              return;
+            }
+            onSet(pin);
+          }
+        }}
+        style={{ marginTop: spacing.lg }}
+      />
+    </View>
+  );
+}
+
+export function PinLockScreen({ pin, onUnlock }: { pin: string; onUnlock: () => void }) {
+  const [entry, setEntry] = useState('');
+  const [error, setError] = useState(false);
+
+  return (
+    <View style={[styles.screen, { justifyContent: 'center' }]}>
+      <Image source={appLogo} style={[styles.introLogo, { alignSelf: 'center', marginLeft: 0 }]} resizeMode="contain" />
+      <Text style={[styles.h1, { textAlign: 'center' }]}>Enter your PIN</Text>
+      <View style={{ marginTop: spacing.lg }}>
+        <PinPad
+          value={entry}
+          onChange={(v) => {
+            setEntry(v);
+            setError(false);
+          }}
+        />
+      </View>
+      {error && <Text style={[styles.loginError, { textAlign: 'center' }]}>Wrong PIN — try again.</Text>}
+      <PrimaryButton
+        label="Unlock"
+        onPress={() => {
+          if (entry === pin) onUnlock();
+          else {
+            setError(true);
+            setEntry('');
+          }
+        }}
+        style={{ marginTop: spacing.lg }}
+      />
+    </View>
+  );
+}
+
 // ── 11d. Complaints & redress ────────────────────────────
 // TODO: confirm exact redress body per product category before production
 // (e.g. OFS for insurance disputes, SC complaints channel for PRS).
@@ -2648,6 +2746,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.muted,
     marginBottom: spacing.sm,
+  },
+  pinInput: {
+    textAlign: 'center',
+    fontSize: 24,
+    letterSpacing: 12,
+    fontWeight: '700',
   },
   disclosureBox: {
     backgroundColor: colors.surface,
