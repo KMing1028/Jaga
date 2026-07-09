@@ -19,6 +19,11 @@ import {
   PrsPeriod,
   religions,
   returnsDisclaimer,
+  RiskCategory,
+  riskCategoryInfo,
+  riskMatches,
+  riskQuestions,
+  scoreRisk,
   Section,
   sections,
 } from './data';
@@ -344,22 +349,31 @@ export function InsuranceScreen({
 export function RetirementScreen({
   occupation,
   religion,
+  riskProfile,
   activePlanIds,
   onOpenProduct,
   onOpenCalculator,
+  onRetakeQuiz,
 }: {
   occupation: Occupation;
   religion: string;
+  riskProfile: RiskCategory;
   activePlanIds: string[];
   onOpenProduct: (p: Product) => void;
   onOpenCalculator: () => void;
+  onRetakeQuiz: () => void;
 }) {
   const isMuslim = religion === 'Islam';
+  // Faith and risk filtering are orthogonal: faith removes conventional funds
+  // for Muslim users, risk only splits what remains into matched vs other.
   const allowedByFaith = (p: Product) => !isMuslim || p.shariah !== false;
+  const info = riskCategoryInfo[riskProfile];
 
   const items = products
     .filter((p) => p.sectionId === 'retirement' && isRelevant(p, occupation.id) && allowedByFaith(p))
     .sort((a, b) => Number(isForYou(b, occupation.id)) - Number(isForYou(a, occupation.id)));
+  const suggested = items.filter((p) => riskMatches(p, riskProfile));
+  const remaining = items.filter((p) => !riskMatches(p, riskProfile));
   const emergencyItems = products.filter((p) => p.sectionId === 'emergency' && allowedByFaith(p));
 
   return (
@@ -372,6 +386,15 @@ export function RetirementScreen({
           Showing Shariah-compliant options only, based on your profile.
         </Text>
       )}
+
+      <View style={styles.riskChipRow}>
+        <Text style={styles.riskChipText}>
+          {info.emoji} {info.label} investor
+        </Text>
+        <Pressable onPress={onRetakeQuiz} hitSlop={8} accessibilityRole="button" accessibilityLabel="Retake risk quiz">
+          <Text style={styles.riskRetake}>Retake quiz</Text>
+        </Pressable>
+      </View>
 
       <Pressable
         onPress={onOpenCalculator}
@@ -386,18 +409,7 @@ export function RetirementScreen({
       </Pressable>
 
       <View style={{ marginTop: spacing.md }}>
-        <Text style={styles.groupLabel}>RETIREMENT PLANS · {items.length} OPTIONS</Text>
-        {items.map((p) => (
-          <ProductCard
-            key={p.id}
-            product={p}
-            forYou={isForYou(p, occupation.id)}
-            active={activePlanIds.includes(p.id)}
-            onPress={() => onOpenProduct(p)}
-          />
-        ))}
-
-        <Text style={[styles.groupLabel, { marginTop: spacing.lg }]}>EMERGENCY FUND</Text>
+        <Text style={styles.groupLabel}>EMERGENCY FUND — START HERE</Text>
         {emergencyItems.map((p) => (
           <ProductCard
             key={p.id}
@@ -406,8 +418,120 @@ export function RetirementScreen({
             onPress={() => onOpenProduct(p)}
           />
         ))}
+
+        {suggested.length > 0 && (
+          <>
+            <Text style={[styles.groupLabel, { marginTop: spacing.lg }]}>
+              MATCHED TO YOUR {info.label.toUpperCase()} PROFILE
+            </Text>
+            {suggested.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                forYou={isForYou(p, occupation.id)}
+                active={activePlanIds.includes(p.id)}
+                onPress={() => onOpenProduct(p)}
+              />
+            ))}
+          </>
+        )}
+
+        <Text style={[styles.groupLabel, { marginTop: spacing.lg }]}>
+          OTHER RETIREMENT PLANS · {remaining.length} OPTIONS
+        </Text>
+        {remaining.map((p) => (
+          <ProductCard
+            key={p.id}
+            product={p}
+            forYou={isForYou(p, occupation.id)}
+            active={activePlanIds.includes(p.id)}
+            onPress={() => onOpenProduct(p)}
+          />
+        ))}
       </View>
       <Text style={styles.disclaimer}>{disclaimer}</Text>
+    </ScrollView>
+  );
+}
+
+// ── 5b. Risk profiling quiz (gates the retirement tab) ───
+
+export function RiskQuizScreen({
+  onDone,
+  onBack,
+}: {
+  onDone: (c: RiskCategory) => void;
+  onBack: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [points, setPoints] = useState<number[]>([]);
+  const [result, setResult] = useState<RiskCategory | null>(null);
+
+  if (result) {
+    const info = riskCategoryInfo[result];
+    return (
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
+        <Text style={styles.h1}>Your investor profile</Text>
+        <View style={styles.riskResultCard}>
+          <Text style={styles.riskResultEmoji}>{info.emoji}</Text>
+          <Text style={styles.riskResultLabel}>{info.label}</Text>
+          <Text style={styles.riskResultBlurb}>{info.blurb}</Text>
+        </View>
+        <PrimaryButton label="Show my matches" onPress={() => onDone(result)} style={{ marginTop: spacing.lg }} />
+        <Text style={styles.activeHint}>You can retake this quiz anytime from the Retirement tab.</Text>
+      </ScrollView>
+    );
+  }
+
+  const q = riskQuestions[step];
+  const answer = (pts: number) => {
+    const next = [...points, pts];
+    if (step + 1 < riskQuestions.length) {
+      setPoints(next);
+      setStep(step + 1);
+    } else {
+      setResult(scoreRisk(next.reduce((a, b) => a + b, 0)));
+    }
+  };
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
+      <BackLink
+        onPress={() => {
+          if (step > 0) {
+            setStep(step - 1);
+            setPoints(points.slice(0, -1));
+          } else {
+            onBack();
+          }
+        }}
+      />
+      <Text style={styles.h1}>Before you invest</Text>
+      <Text style={styles.sub}>
+        Six quick questions so JAGA can match retirement funds to how much risk actually fits your life.
+      </Text>
+
+      <Text style={[styles.detailLabel, { marginTop: spacing.lg }]}>
+        QUESTION {step + 1} OF {riskQuestions.length}
+      </Text>
+      <Text style={styles.riskQuestion}>{q.q}</Text>
+      {q.options.map((o) => (
+        <Pressable
+          key={o.label}
+          onPress={() => answer(o.points)}
+          style={({ pressed }) => [styles.bankRow, pressed && { backgroundColor: colors.accentSoft }]}
+          accessibilityRole="button"
+          accessibilityLabel={o.label}
+        >
+          <Text style={styles.bankRowName}>{o.label}</Text>
+          <Text style={styles.chev}>›</Text>
+        </Pressable>
+      ))}
+      <View style={styles.quizDots}>
+        {riskQuestions.map((_, i) => (
+          <View key={i} style={[styles.quizDot, i === step && styles.quizDotOn]} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -1968,5 +2092,74 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: spacing.md,
+  },
+
+  // risk profiling
+  riskChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    marginTop: spacing.md,
+  },
+  riskChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  riskRetake: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.accent,
+  },
+  riskQuestion: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.ink,
+    marginBottom: spacing.md,
+    lineHeight: 25,
+  },
+  riskResultCard: {
+    backgroundColor: colors.deep,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  riskResultEmoji: {
+    fontSize: 44,
+  },
+  riskResultLabel: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.onDeep,
+    marginTop: spacing.sm,
+  },
+  riskResultBlurb: {
+    fontSize: 14,
+    color: '#C7B299',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: spacing.sm,
+  },
+  quizDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  quizDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  quizDotOn: {
+    backgroundColor: colors.accent,
   },
 });

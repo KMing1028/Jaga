@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Account, EmergencyGoal, Loan, Occupation, Product, Section } from './src/data';
+import { Account, EmergencyGoal, Loan, Occupation, Product, RiskCategory, Section } from './src/data';
 import { TabBar, TabId } from './src/components';
 import {
   BankLinkScreen,
@@ -19,6 +19,7 @@ import {
   OccupationScreen,
   ProductScreen,
   RetirementScreen,
+  RiskQuizScreen,
   SectionScreen,
 } from './src/screens';
 import { colors } from './src/theme';
@@ -32,6 +33,7 @@ type Overlay =
   | { name: 'loan'; loan: Loan }
   | { name: 'bankLink' }
   | { name: 'calculator' }
+  | { name: 'riskQuiz' }
   | { name: 'emergencyGoal'; product: Product };
 
 export default function App() {
@@ -45,6 +47,7 @@ export default function App() {
   const [linkedBank, setLinkedBank] = useState<LinkedBank | null>(null);
   const [autoDebit, setAutoDebit] = useState(false);
   const [emergencyGoal, setEmergencyGoal] = useState<EmergencyGoal | null>(null);
+  const [riskProfile, setRiskProfile] = useState<RiskCategory | null>(null);
   const [loggedOut, setLoggedOut] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -65,6 +68,7 @@ export default function App() {
           if (typeof s.autoDebit === 'boolean') setAutoDebit(s.autoDebit);
           if (s.emergencyGoal) setEmergencyGoal(s.emergencyGoal);
           if (typeof s.loggedOut === 'boolean') setLoggedOut(s.loggedOut);
+          if (s.riskProfile) setRiskProfile(s.riskProfile);
         } catch {
           // corrupt store — fall back to defaults
         }
@@ -77,9 +81,9 @@ export default function App() {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut }),
+      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile }),
     ).catch(() => {});
-  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut]);
+  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile]);
 
   const resetApp = () => {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
@@ -94,6 +98,7 @@ export default function App() {
     setAutoDebit(false);
     setEmergencyGoal(null);
     setLoggedOut(false);
+    setRiskProfile(null);
   };
 
   const togglePlan = (id: string) =>
@@ -223,6 +228,16 @@ export default function App() {
     );
   } else if (overlay?.name === 'calculator') {
     content = <CalculatorScreen onBack={() => setOverlay(null)} />;
+  } else if (overlay?.name === 'riskQuiz') {
+    content = (
+      <RiskQuizScreen
+        onDone={(c) => {
+          setRiskProfile(c);
+          setOverlay(null);
+        }}
+        onBack={() => setOverlay(null)}
+      />
+    );
   } else if (tab === 'home') {
     content = (
       <DashboardScreen
@@ -248,13 +263,18 @@ export default function App() {
       />
     );
   } else if (tab === 'retirement') {
-    content = (
+    // Mandatory gate: the risk quiz must be completed before first access.
+    content = !riskProfile ? (
+      <RiskQuizScreen onDone={setRiskProfile} onBack={() => switchTab('home')} />
+    ) : (
       <RetirementScreen
         occupation={occupation}
         religion={account.religion}
+        riskProfile={riskProfile}
         activePlanIds={activePlanIds}
         onOpenProduct={(product) => openProduct(product)}
         onOpenCalculator={() => setOverlay({ name: 'calculator' })}
+        onRetakeQuiz={() => setOverlay({ name: 'riskQuiz' })}
       />
     );
   } else {

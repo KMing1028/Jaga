@@ -686,6 +686,97 @@ export type Account = {
 
 export const religions = ['Islam', 'Buddhism', 'Christianity', 'Hinduism', 'Other', 'Prefer not to say'];
 
+// ── Risk profiling (retirement tab gate) ─────────────────
+export type RiskCategory = 'conservative' | 'moderate' | 'aggressive';
+
+export type RiskQuestion = { q: string; options: { label: string; points: number }[] };
+
+export const riskQuestions: RiskQuestion[] = [
+  {
+    q: 'When do you expect to start spending this money?',
+    options: [
+      { label: 'Within 5 years', points: 0 },
+      { label: 'In 5–15 years', points: 1 },
+      { label: '15+ years away', points: 2 },
+    ],
+  },
+  {
+    q: 'How steady is your gig income month to month?',
+    options: [
+      { label: 'Very unpredictable', points: 0 },
+      { label: 'Varies, but manageable', points: 1 },
+      { label: 'Quite steady', points: 2 },
+    ],
+  },
+  {
+    q: 'Your fund drops 20% in a bad year. What do you do?',
+    options: [
+      { label: 'Move everything somewhere safer', points: 0 },
+      { label: 'Wait it out', points: 1 },
+      { label: 'Top up while prices are low', points: 2 },
+    ],
+  },
+  {
+    q: 'Have you invested before?',
+    options: [
+      { label: 'Never — savings accounts only', points: 0 },
+      { label: 'Some — ASB, Tabung Haji or unit trusts', points: 1 },
+      { label: 'Yes — stocks, funds or crypto', points: 2 },
+    ],
+  },
+  {
+    q: 'If your income stopped tomorrow, your savings would cover…',
+    options: [
+      { label: 'Less than a month', points: 0 },
+      { label: '1–3 months', points: 1 },
+      { label: 'More than 3 months', points: 2 },
+    ],
+  },
+  {
+    q: 'What matters most for your retirement money?',
+    options: [
+      { label: 'Protecting every ringgit', points: 0 },
+      { label: 'A balance of growth and safety', points: 1 },
+      { label: 'Growing it as much as possible', points: 2 },
+    ],
+  },
+];
+
+export function scoreRisk(totalPoints: number): RiskCategory {
+  if (totalPoints <= 4) return 'conservative';
+  if (totalPoints <= 8) return 'moderate';
+  return 'aggressive';
+}
+
+// `matches` entries are matched against Product.risk (e.g. "Core · Aggressive · Shariah")
+export const riskCategoryInfo: Record<
+  RiskCategory,
+  { label: string; emoji: string; blurb: string; matches: string[] }
+> = {
+  conservative: {
+    label: 'Conservative',
+    emoji: '🛡️',
+    blurb: 'Protecting what you save matters more to you than chasing returns — capital-preservation funds fit best.',
+    matches: ['Cautious', 'Conservative'],
+  },
+  moderate: {
+    label: 'Moderate',
+    emoji: '⚖️',
+    blurb: 'You want growth with a smoother ride — balanced funds fit you best.',
+    matches: ['Moderate'],
+  },
+  aggressive: {
+    label: 'Aggressive',
+    emoji: '🚀',
+    blurb: 'You have the time horizon and the stomach for swings — growth funds fit you best.',
+    matches: ['Aggressive'],
+  },
+};
+
+export function riskMatches(product: Product, category: RiskCategory): boolean {
+  return !!product.risk && riskCategoryInfo[category].matches.some((m) => product.risk!.includes(m));
+}
+
 // ── Emergency fund goal ──────────────────────────────────
 export type EmergencyGoal = { burden: string; months: number; expenses: number; goal: number };
 
