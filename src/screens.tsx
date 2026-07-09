@@ -40,7 +40,7 @@ function isForYou(product: Product, occupationId: string) {
 
 // ── 1. Intro ─────────────────────────────────────────────
 
-const introSlideCount = 4;
+const introSlideCount = 6;
 
 export function IntroScreen({ onStart }: { onStart: () => void }) {
   const [width, setWidth] = useState(0);
@@ -69,34 +69,54 @@ export function IntroScreen({ onStart }: { onStart: () => void }) {
             }}
             style={{ flex: 1 }}
           >
-            {/* Slide 1 — logo, tagline, insurance */}
+            {/* Slide 1 — the hook: sourced coverage stat.
+                ⚠️ VERIFY BEFORE SHIPPING: figure from ISEAS Perspective 2026/48
+                (Lee Hwok Aun) — SESSS participation among gig workers ~26% as of
+                May 2025. Re-confirm against the published paper before launch. */}
+            <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={() => goTo(index + 1)}>
+              <Text style={styles.introStatBig}>
+                Only about 1 in 4 gig workers in Malaysia are covered by SOCSO’s self-employed injury
+                scheme.
+              </Text>
+              <Text style={styles.introSource}>Source: ISEAS Perspective 2026/48</Text>
+            </Pressable>
+
+            {/* Slide 2 — brand intro */}
             <Pressable style={[styles.introSlide, { width }]} onPress={() => goTo(index + 1)}>
               <Image source={appLogo} style={styles.introLogo} resizeMode="contain" />
               <Text style={styles.wordmark}>JAGA</Text>
               <Text style={styles.tagline}>Protection for Malaysia’s gig workers</Text>
-              <View style={styles.introSlidePoint}>
-                <IntroPoint emoji="🛡️" title="Insurance made simple" body="Accident, health and SOCSO cover — matched to the work you actually do." />
-              </View>
+              <Text style={styles.introBrandLine}>
+                Insurance, retirement savings, an emergency fund and fair micro-loans — one app built
+                around gig income.
+              </Text>
+              <Text style={[styles.introFootnote, { textAlign: 'left', marginTop: spacing.lg }]}>
+                jaga (Malay) — to guard, to protect
+              </Text>
             </Pressable>
 
-            {/* Slide 2 — retirement */}
+            {/* Slide 3 — insurance */}
+            <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={() => goTo(index + 1)}>
+              <Text style={styles.introSlideEmoji}>🛡️</Text>
+              <IntroPoint emoji="" title="Insurance made simple" body="Accident, health and SOCSO cover — matched to the work you actually do." />
+            </Pressable>
+
+            {/* Slide 4 — retirement */}
             <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={() => goTo(index + 1)}>
               <Text style={styles.introSlideEmoji}>🌱</Text>
               <IntroPoint emoji="" title="Retirement that fits gig income" body="Save small amounts monthly and collect free government top-ups." />
             </Pressable>
 
-            {/* Slide 3 — small payments */}
+            {/* Slide 5 — emergency fund / MMF */}
             <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={() => goTo(index + 1)}>
-              <Text style={styles.introSlideEmoji}>💸</Text>
-              <IntroPoint emoji="" title="Small monthly payments" body="From about RM10 a month — no big one-time premiums." />
+              <Text style={styles.introSlideEmoji}>🌧️</Text>
+              <IntroPoint emoji="" title="An emergency fund for slow months" body="Parked in a Shariah-compliant money market fund — withdraw anytime, no lock-in." />
             </Pressable>
 
-            {/* Slide 4 — stat + footnote */}
+            {/* Slide 6 — micro-loans */}
             <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={onStart}>
-              <Text style={[styles.introStat, { textAlign: 'center', marginTop: 0, fontSize: 17, lineHeight: 26, color: colors.ink }]}>
-                3 million+ Malaysians do gig work.{'\n'}Fewer than 1 in 10 are protected.
-              </Text>
-              <Text style={[styles.introFootnote, { marginTop: spacing.lg }]}>jaga (Malay) — to guard, to protect</Text>
+              <Text style={styles.introSlideEmoji}>💸</Text>
+              <IntroPoint emoji="" title="Small loans when you need them" body="From TEKUN and licensed fintech lenders built for gig income, not bank statements." />
             </Pressable>
           </ScrollView>
         )}
@@ -1404,6 +1424,23 @@ const styles = StyleSheet.create({
   introSlideEmoji: {
     fontSize: 52,
     marginBottom: spacing.lg,
+  },
+  introStatBig: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.ink,
+    lineHeight: 36,
+  },
+  introSource: {
+    fontSize: 12,
+    color: colors.faint,
+    marginTop: spacing.md,
+  },
+  introBrandLine: {
+    fontSize: 15,
+    color: colors.muted,
+    lineHeight: 22,
+    marginTop: spacing.lg,
   },
   introDots: {
     flexDirection: 'row',
