@@ -73,6 +73,39 @@ function IntroPoint({ emoji, title, body }: { emoji: string; title: string; body
   );
 }
 
+// ── 1b. Login (prototype — see password note in CreateAccountScreen) ──
+
+export function LoginScreen({ onLogin, onNewUser }: { onLogin: () => void; onNewUser: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [tried, setTried] = useState(false);
+  const canLogin = email.trim().length > 0 && password.length > 0;
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+      <View style={styles.introCenter}>
+        <Image source={appLogo} style={styles.introLogo} resizeMode="contain" />
+        <Text style={styles.wordmark}>JAGA</Text>
+        <Text style={styles.tagline}>Welcome back</Text>
+
+        <View style={{ marginTop: spacing.xl }}>
+          <FormField label="Email" value={email} onChange={setEmail} placeholder="you@email.com" autoComplete="email" />
+          <FormField label="Password" value={password} onChange={setPassword} placeholder="Your password" secure />
+          <Text style={styles.passwordNote}>Prototype — no real login yet. Your password is not stored.</Text>
+          {tried && !canLogin && (
+            <Text style={styles.loginError}>Enter your email and password to continue.</Text>
+          )}
+        </View>
+      </View>
+
+      <PrimaryButton label="Log in" onPress={() => (canLogin ? onLogin() : setTried(true))} />
+      <Pressable onPress={onNewUser} hitSlop={8} accessibilityRole="button" accessibilityLabel="Create a new account">
+        <Text style={styles.loginNewUser}>New to JAGA? Create an account</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
 // ── 2. Occupation ────────────────────────────────────────
 
 export function OccupationScreen({
@@ -1923,5 +1956,17 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: -spacing.xs,
     marginBottom: spacing.sm,
+  },
+  loginError: {
+    fontSize: 13,
+    color: '#9A3412',
+    marginTop: spacing.xs,
+  },
+  loginNewUser: {
+    textAlign: 'center',
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: spacing.md,
   },
 });

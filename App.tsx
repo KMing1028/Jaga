@@ -14,6 +14,7 @@ import {
   IntroScreen,
   LinkedBank,
   LoanDetailScreen,
+  LoginScreen,
   LoansScreen,
   OccupationScreen,
   ProductScreen,
@@ -44,6 +45,7 @@ export default function App() {
   const [linkedBank, setLinkedBank] = useState<LinkedBank | null>(null);
   const [autoDebit, setAutoDebit] = useState(false);
   const [emergencyGoal, setEmergencyGoal] = useState<EmergencyGoal | null>(null);
+  const [loggedOut, setLoggedOut] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   // Hydrate persisted state on mount. The password is never part of this
@@ -62,6 +64,7 @@ export default function App() {
           if (s.linkedBank) setLinkedBank(s.linkedBank);
           if (typeof s.autoDebit === 'boolean') setAutoDebit(s.autoDebit);
           if (s.emergencyGoal) setEmergencyGoal(s.emergencyGoal);
+          if (typeof s.loggedOut === 'boolean') setLoggedOut(s.loggedOut);
         } catch {
           // corrupt store — fall back to defaults
         }
@@ -74,9 +77,9 @@ export default function App() {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal }),
+      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut }),
     ).catch(() => {});
-  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal]);
+  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut]);
 
   const resetApp = () => {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
@@ -90,6 +93,7 @@ export default function App() {
     setLinkedBank(null);
     setAutoDebit(false);
     setEmergencyGoal(null);
+    setLoggedOut(false);
   };
 
   const togglePlan = (id: string) =>
@@ -115,6 +119,17 @@ export default function App() {
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <StatusBar style="dark" />
       </View>
+    );
+  }
+
+  // Logged out but account data kept: show login; any non-empty credentials
+  // restore the session (prototype — no real auth). New users wipe and restart.
+  if (account && loggedOut) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <LoginScreen onLogin={() => setLoggedOut(false)} onNewUser={resetApp} />
+      </>
     );
   }
 
@@ -221,7 +236,7 @@ export default function App() {
         onOpenProduct={(product) => openProduct(product)}
         onBrowse={switchTab}
         onChangeOccupation={() => setPickingOccupation(true)}
-        onLogout={resetApp}
+        onLogout={() => setLoggedOut(true)}
       />
     );
   } else if (tab === 'insurance') {
