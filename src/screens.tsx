@@ -372,7 +372,14 @@ export function InsuranceScreen({
   activePlanIds: string[];
   onOpenSection: (s: Section) => void;
 }) {
-  const insurance = sections.filter((s) => s.group === 'insurance');
+  // Hide sections with nothing relevant to this occupation — but never hide a
+  // section the user is already paying into (occupation is editable later).
+  const insurance = sections.filter(
+    (s) =>
+      s.group === 'insurance' &&
+      (products.some((p) => p.sectionId === s.id && isRelevant(p, occupation.id)) ||
+        products.some((p) => p.sectionId === s.id && activePlanIds.includes(p.id))),
+  );
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
       <Text style={styles.h1}>Insurance</Text>
