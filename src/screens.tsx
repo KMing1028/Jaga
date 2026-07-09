@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BackLink, Badge, LoanCard, LogoMark, PrimaryButton, ProductCard } from './components';
 import {
@@ -41,27 +41,77 @@ function isForYou(product: Product, occupationId: string) {
 
 // ── 1. Intro ─────────────────────────────────────────────
 
+const introSlideCount = 4;
+
 export function IntroScreen({ onStart }: { onStart: () => void }) {
+  const [width, setWidth] = useState(0);
+  const [index, setIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const goTo = (i: number) => {
+    const clamped = Math.max(0, Math.min(introSlideCount - 1, i));
+    scrollRef.current?.scrollTo({ x: clamped * width, animated: true });
+    setIndex(clamped);
+  };
+
   return (
     <View style={styles.screen}>
-      <View style={styles.introCenter}>
-        <Image source={appLogo} style={styles.introLogo} resizeMode="contain" />
-        <Text style={styles.wordmark}>JAGA</Text>
-        <Text style={styles.tagline}>Protection for Malaysia’s gig workers</Text>
+      <View style={{ flex: 1 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        {width > 0 && (
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(e) => {
+              const i = Math.round(e.nativeEvent.contentOffset.x / width);
+              if (i !== index) setIndex(i);
+            }}
+            style={{ flex: 1 }}
+          >
+            {/* Slide 1 — logo, tagline, insurance */}
+            <Pressable style={[styles.introSlide, { width }]} onPress={() => goTo(index + 1)}>
+              <Image source={appLogo} style={styles.introLogo} resizeMode="contain" />
+              <Text style={styles.wordmark}>JAGA</Text>
+              <Text style={styles.tagline}>Protection for Malaysia’s gig workers</Text>
+              <View style={styles.introSlidePoint}>
+                <IntroPoint emoji="🛡️" title="Insurance made simple" body="Accident, health and SOCSO cover — matched to the work you actually do." />
+              </View>
+            </Pressable>
 
-        <View style={styles.introPoints}>
-          <IntroPoint emoji="🛡️" title="Insurance made simple" body="Accident, health and SOCSO cover — matched to the work you actually do." />
-          <IntroPoint emoji="🌱" title="Retirement that fits gig income" body="Save small amounts monthly and collect free government top-ups." />
-          <IntroPoint emoji="💸" title="Small monthly payments" body="From about RM10 a month — no big one-time premiums." />
-        </View>
+            {/* Slide 2 — retirement */}
+            <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={() => goTo(index + 1)}>
+              <Text style={styles.introSlideEmoji}>🌱</Text>
+              <IntroPoint emoji="" title="Retirement that fits gig income" body="Save small amounts monthly and collect free government top-ups." />
+            </Pressable>
 
-        <Text style={styles.introStat}>
-          3 million+ Malaysians do gig work.{'\n'}Fewer than 1 in 10 are protected.
-        </Text>
+            {/* Slide 3 — small payments */}
+            <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={() => goTo(index + 1)}>
+              <Text style={styles.introSlideEmoji}>💸</Text>
+              <IntroPoint emoji="" title="Small monthly payments" body="From about RM10 a month — no big one-time premiums." />
+            </Pressable>
+
+            {/* Slide 4 — stat + footnote */}
+            <Pressable style={[styles.introSlide, styles.introSlideCentered, { width }]} onPress={onStart}>
+              <Text style={[styles.introStat, { textAlign: 'center', marginTop: 0, fontSize: 17, lineHeight: 26, color: colors.ink }]}>
+                3 million+ Malaysians do gig work.{'\n'}Fewer than 1 in 10 are protected.
+              </Text>
+              <Text style={[styles.introFootnote, { marginTop: spacing.lg }]}>jaga (Malay) — to guard, to protect</Text>
+            </Pressable>
+          </ScrollView>
+        )}
+      </View>
+
+      <View style={styles.introDots}>
+        {Array.from({ length: introSlideCount }).map((_, i) => (
+          <Pressable key={i} onPress={() => goTo(i)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Slide ${i + 1}`}>
+            <View style={[styles.introDot, i === index && styles.introDotOn]} />
+          </Pressable>
+        ))}
       </View>
 
       <PrimaryButton label="Get started" onPress={onStart} />
-      <Text style={styles.introFootnote}>jaga (Malay) — to guard, to protect</Text>
     </View>
   );
 }
@@ -1325,6 +1375,37 @@ const styles = StyleSheet.create({
   introPoints: {
     marginTop: spacing.xl,
     gap: spacing.lg,
+  },
+  introSlide: {
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  introSlideCentered: {
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.md,
+  },
+  introSlidePoint: {
+    marginTop: spacing.xl,
+  },
+  introSlideEmoji: {
+    fontSize: 52,
+    marginBottom: spacing.lg,
+  },
+  introDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  introDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  introDotOn: {
+    backgroundColor: colors.accent,
+    width: 20,
   },
   introPoint: {
     flexDirection: 'row',
