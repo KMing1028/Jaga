@@ -61,7 +61,14 @@ export default function App() {
         try {
           const s = JSON.parse(raw);
           if (typeof s.started === 'boolean') setStarted(s.started);
-          if (s.account) setAccount(s.account);
+          if (s.account) {
+            // migrate pre-isMuslim accounts that stored full religion
+            if (typeof s.account.isMuslim !== 'boolean') {
+              s.account.isMuslim = s.account.religion === 'Islam';
+              delete s.account.religion;
+            }
+            setAccount(s.account);
+          }
           if (s.occupation) setOccupation(s.occupation);
           if (Array.isArray(s.activePlanIds)) setActivePlanIds(s.activePlanIds);
           if (s.linkedBank) setLinkedBank(s.linkedBank);
@@ -289,7 +296,7 @@ export default function App() {
     ) : (
       <RetirementScreen
         occupation={occupation}
-        religion={account.religion}
+        isMuslim={account.isMuslim}
         riskProfile={riskProfile}
         activePlanIds={activePlanIds}
         onOpenProduct={(product) => openProduct(product)}

@@ -680,11 +680,9 @@ export type Account = {
   fullName: string;
   phone: string;
   age: string;
-  religion: string;
+  isMuslim: boolean; // data minimization: only what Shariah filtering needs, not full affiliation
   viaGoogle: boolean;
 };
-
-export const religions = ['Islam', 'Buddhism', 'Christianity', 'Hinduism', 'Other', 'Prefer not to say'];
 
 // ── Risk profiling (retirement tab gate) ─────────────────
 export type RiskCategory = 'conservative' | 'moderate' | 'aggressive';

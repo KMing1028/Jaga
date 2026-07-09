@@ -17,7 +17,6 @@ import {
   Product,
   products,
   PrsPeriod,
-  religions,
   returnsDisclaimer,
   RiskCategory,
   riskCategoryInfo,
@@ -240,7 +239,7 @@ export function DashboardScreen({
         isRelevant(p, occupation.id) &&
         !coveredSections.has(p.sectionId) &&
         !p.referenceOnly &&
-        (account.religion !== 'Islam' || p.shariah !== false),
+        (!account.isMuslim || p.shariah !== false),
     )
     .sort((a, b) => Number(isForYou(b, occupation.id)) - Number(isForYou(a, occupation.id)))
     .slice(0, 3);
@@ -399,7 +398,7 @@ export function InsuranceScreen({
 
 export function RetirementScreen({
   occupation,
-  religion,
+  isMuslim,
   riskProfile,
   activePlanIds,
   onOpenProduct,
@@ -407,14 +406,13 @@ export function RetirementScreen({
   onRetakeQuiz,
 }: {
   occupation: Occupation;
-  religion: string;
+  isMuslim: boolean;
   riskProfile: RiskCategory;
   activePlanIds: string[];
   onOpenProduct: (p: Product) => void;
   onOpenCalculator: () => void;
   onRetakeQuiz: () => void;
 }) {
-  const isMuslim = religion === 'Islam';
   // Faith and risk filtering are orthogonal: faith removes conventional funds
   // for Muslim users, risk only splits what remains into matched vs other.
   const allowedByFaith = (p: Product) => !isMuslim || p.shariah !== false;
@@ -1114,7 +1112,7 @@ export function CreateAccountScreen({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
-  const [religion, setReligion] = useState<string | null>(null);
+  const [isMuslim, setIsMuslim] = useState<boolean | null>(null);
   const [tried, setTried] = useState(false);
 
   const missing: string[] = [];
@@ -1124,7 +1122,7 @@ export function CreateAccountScreen({
   if (fullName.trim().length < 2) missing.push('Full name');
   if (phone.replace(/\D/g, '').length < 9) missing.push('Phone number — at least 9 digits');
   if (!(parseInt(age, 10) >= 16)) missing.push('Age — must be 16 or older');
-  if (religion === null) missing.push('Religion — tap one of the options');
+  if (isMuslim === null) missing.push('Are you Muslim? — tap Yes or No');
   const canCreate = missing.length === 0;
 
   return (
@@ -1165,15 +1163,24 @@ export function CreateAccountScreen({
       <FormField label="Phone number" value={phone} onChange={(t) => setPhone(t.replace(/[^\d+\s-]/g, ''))} placeholder="+60 12-345 6789" autoComplete="tel" />
       <FormField label="Age" value={age} onChange={(t) => setAge(t.replace(/\D/g, ''))} placeholder="e.g. 27" autoComplete="off" />
 
-      <Text style={styles.detailLabel}>RELIGION</Text>
+      <Text style={styles.detailLabel}>ARE YOU MUSLIM?</Text>
       <Text style={styles.faithAsk}>
-        We ask this with respect — it lets JAGA show Shariah-compliant products where your faith requires
-        them.
+        We ask this with respect — it lets JAGA show only Shariah-compliant products where relevant.
+        You’ll still see everything else either way.
       </Text>
       <View style={styles.chipWrap}>
-        {religions.map((r) => (
-          <Pressable key={r} onPress={() => setReligion(r)} style={[styles.chip, religion === r && styles.chipOn]}>
-            <Text style={[styles.chipText, religion === r && styles.chipTextOn]}>{r}</Text>
+        {[
+          { label: 'Yes, I’m Muslim', value: true },
+          { label: 'No', value: false },
+        ].map((o) => (
+          <Pressable
+            key={o.label}
+            onPress={() => setIsMuslim(o.value)}
+            style={[styles.chip, isMuslim === o.value && styles.chipOn]}
+            accessibilityRole="button"
+            accessibilityLabel={o.label}
+          >
+            <Text style={[styles.chipText, isMuslim === o.value && styles.chipTextOn]}>{o.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -1181,11 +1188,11 @@ export function CreateAccountScreen({
       <PrimaryButton
         label="Create account"
         onPress={() => {
-          if (!canCreate || !religion) {
+          if (!canCreate || isMuslim === null) {
             setTried(true);
             return;
           }
-          onCreate({ username: username.trim(), email, fullName, phone, age, religion, viaGoogle });
+          onCreate({ username: username.trim(), email, fullName, phone, age, isMuslim, viaGoogle });
         }}
         style={{ marginTop: spacing.lg, opacity: canCreate ? 1 : 0.6 }}
       />
