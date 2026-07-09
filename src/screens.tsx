@@ -10,6 +10,7 @@ import {
   disclaimer,
   EmergencyGoal,
   Loan,
+  akpkNote,
   loans,
   loansDisclaimer,
   Occupation,
@@ -1020,6 +1021,17 @@ export function ProductScreen({
         </View>
       ) : null}
 
+      {(product.riskDisclosure || product.freeLookPeriod) && (
+        <>
+          <Text style={styles.detailLabel}>
+            {product.riskDisclosure ? 'RISK & COOLING-OFF' : 'YOUR CANCELLATION RIGHTS'}
+          </Text>
+          <View style={styles.disclosureBox}>
+            <Text style={styles.disclosureText}>{product.riskDisclosure ?? product.freeLookPeriod}</Text>
+          </View>
+        </>
+      )}
+
       {tracked && isActive && (
         <>
           <Text style={styles.detailLabel}>MY PROGRESS</Text>
@@ -1148,6 +1160,10 @@ export function LoanDetailScreen({ loan, onBack }: { loan: Loan; onBack: () => v
           <Text style={styles.noteText}>{loan.note}</Text>
         </View>
       ) : null}
+
+      <View style={[styles.disclosureBox, { marginTop: spacing.md }]}>
+        <Text style={styles.disclosureText}>{akpkNote}</Text>
+      </View>
 
       {!confirming ? (
         <PrimaryButton
@@ -2591,6 +2607,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.muted,
     marginBottom: spacing.sm,
+  },
+  disclosureBox: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+  },
+  disclosureText: {
+    fontSize: 13,
+    color: colors.ink,
+    lineHeight: 19,
   },
   consentCheckRow: {
     flexDirection: 'row',

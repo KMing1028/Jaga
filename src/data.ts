@@ -48,6 +48,8 @@ export type Product = {
   referenceOnly?: string; // set when the product can't be bought via JAGA; value = where to get it
   shariah?: boolean; // true = Shariah-compliant, false = conventional-only (hidden for Muslim users), undefined = neutral
   risk?: string; // fund risk / allocation type
+  riskDisclosure?: string; // regulatory disclosure shown in its own box on ProductScreen
+  freeLookPeriod?: string; // insurance free-look / cancellation window
   returns?: { YTD: number; '1Y': number; '3Y': number }; // fund returns, 3Y is % p.a.
   coverage: string[];
   note?: string;
@@ -171,6 +173,8 @@ export const products: Product[] = [
   // ── Personal Accident ─────────────────────────────────
   {
     id: 'tm-pa-rider',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'pa',
     name: 'Personal Accident for Riders',
     provider: 'Tokio Marine',
@@ -192,6 +196,8 @@ export const products: Product[] = [
   },
   {
     id: 'ps-directcare',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'pa',
     name: 'DirectCare+ Microtakaful',
     provider: 'PolicyStreet',
@@ -212,6 +218,8 @@ export const products: Product[] = [
   },
   {
     id: 'ge-classicpa',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'pa',
     name: 'Classic PA',
     provider: 'Great Eastern',
@@ -233,6 +241,8 @@ export const products: Product[] = [
   // ── Health & Hospital Income ──────────────────────────
   {
     id: 'prubsn-anugerahmax',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'health',
     name: 'PruBSN AnugerahMax',
     provider: 'Prudential BSN Takaful',
@@ -255,6 +265,8 @@ export const products: Product[] = [
   },
   {
     id: 'ps-freelancer-health',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'health',
     name: 'Freelancer Health & Dental',
     provider: 'PolicyStreet',
@@ -275,6 +287,8 @@ export const products: Product[] = [
   },
   {
     id: 'allianz-medical',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'health',
     name: 'Medical Card + Hospital Income',
     provider: 'Allianz',
@@ -296,6 +310,8 @@ export const products: Product[] = [
   // ── Vehicle & E-Hailing ───────────────────────────────
   {
     id: 'zurich-autocover',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'vehicle',
     name: 'Auto Cover — E-Hailing Add-On',
     provider: 'Zurich Malaysia',
@@ -317,6 +333,8 @@ export const products: Product[] = [
   },
   {
     id: 'zurich-zrider',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'vehicle',
     name: 'Z-Rider / Z-Rider Takaful',
     provider: 'Zurich Malaysia',
@@ -337,6 +355,8 @@ export const products: Product[] = [
   },
   {
     id: 'grab-etiqa',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'vehicle',
     name: 'Grab Daily E-Hailing Insurance',
     provider: 'Etiqa',
@@ -357,6 +377,8 @@ export const products: Product[] = [
   },
   {
     id: 'grab-zurich',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'vehicle',
     name: 'Grab Daily E-Hailing Insurance',
     provider: 'Zurich',
@@ -379,6 +401,8 @@ export const products: Product[] = [
   // ── Work & Equipment ──────────────────────────────────
   {
     id: 'tm-git',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'work',
     name: 'Goods in Transit',
     provider: 'Tokio Marine',
@@ -398,6 +422,8 @@ export const products: Product[] = [
   },
   {
     id: 'ps-indemnity',
+    // TODO: confirm per-product free-look terms with each insurer before production
+    freeLookPeriod: 'Free-look period: you typically have 15 days from policy delivery to review and cancel for a full refund if you are not satisfied — standard for Malaysian insurance and takaful.',
     sectionId: 'work',
     name: 'Professional Indemnity & Liability',
     provider: 'PolicyStreet',
@@ -464,6 +490,8 @@ export const products: Product[] = [
   },
   {
     id: 'aham-prs-growth',
+    // TODO: confirm cooling-off wording against the fund's disclosure document before production
+    riskDisclosure: 'PRS is regulated by the Securities Commission Malaysia. Cooling-off: you have 6 business days from your first contribution to withdraw without exit penalty, refunded in full less any investment loss during that period. Unit prices can fall as well as rise.',
     sectionId: 'retirement',
     name: 'AHAM PRS Growth Fund',
     provider: 'AHAM Asset Management',
@@ -487,6 +515,8 @@ export const products: Product[] = [
   },
   {
     id: 'aham-prs-moderate',
+    // TODO: confirm cooling-off wording against the fund's disclosure document before production
+    riskDisclosure: 'PRS is regulated by the Securities Commission Malaysia. Cooling-off: you have 6 business days from your first contribution to withdraw without exit penalty, refunded in full less any investment loss during that period. Unit prices can fall as well as rise.',
     sectionId: 'retirement',
     name: 'AHAM PRS Moderate Fund',
     provider: 'AHAM Asset Management',
@@ -510,6 +540,8 @@ export const products: Product[] = [
   },
   {
     id: 'aham-prs-conservative',
+    // TODO: confirm cooling-off wording against the fund's disclosure document before production
+    riskDisclosure: 'PRS is regulated by the Securities Commission Malaysia. Cooling-off: you have 6 business days from your first contribution to withdraw without exit penalty, refunded in full less any investment loss during that period. Unit prices can fall as well as rise.',
     sectionId: 'retirement',
     name: 'AHAM PRS Conservative Fund',
     provider: 'AHAM Asset Management',
@@ -533,6 +565,8 @@ export const products: Product[] = [
   },
   {
     id: 'aham-aiiman-growth',
+    // TODO: confirm cooling-off wording against the fund's disclosure document before production
+    riskDisclosure: 'PRS is regulated by the Securities Commission Malaysia. Cooling-off: you have 6 business days from your first contribution to withdraw without exit penalty, refunded in full less any investment loss during that period. Unit prices can fall as well as rise.',
     sectionId: 'retirement',
     name: 'AHAM Aiiman PRS Shariah Growth Fund',
     provider: 'AHAM Asset Management',
@@ -556,6 +590,8 @@ export const products: Product[] = [
   },
   {
     id: 'aham-aiiman-moderate',
+    // TODO: confirm cooling-off wording against the fund's disclosure document before production
+    riskDisclosure: 'PRS is regulated by the Securities Commission Malaysia. Cooling-off: you have 6 business days from your first contribution to withdraw without exit penalty, refunded in full less any investment loss during that period. Unit prices can fall as well as rise.',
     sectionId: 'retirement',
     name: 'AHAM Aiiman PRS Shariah Moderate Fund',
     provider: 'AHAM Asset Management',
@@ -579,6 +615,8 @@ export const products: Product[] = [
   },
   {
     id: 'aham-aiiman-conservative',
+    // TODO: confirm cooling-off wording against the fund's disclosure document before production
+    riskDisclosure: 'PRS is regulated by the Securities Commission Malaysia. Cooling-off: you have 6 business days from your first contribution to withdraw without exit penalty, refunded in full less any investment loss during that period. Unit prices can fall as well as rise.',
     sectionId: 'retirement',
     name: 'AHAM Aiiman PRS Shariah Conservative Fund',
     provider: 'AHAM Asset Management',
@@ -825,7 +863,10 @@ export const loans: Loan[] = [
 ];
 
 export const loansDisclaimer =
-  'Rates and limits are indicative estimates for this prototype — confirm with each provider before applying. Borrow only what a slow month can still repay.';
+  'Rates and limits are indicative estimates for this prototype — confirm with each provider before applying. Borrow only what a slow month can still repay, and never take a loan to repay another loan.';
+
+export const akpkNote =
+  'Struggling with repayments? AKPK (Agensi Kaunseling dan Pengurusan Kredit) offers free, confidential debt counselling backed by Bank Negara — akpk.gov.my.';
 
 // ── Banks for account linking ────────────────────────────
 export const banks = [
