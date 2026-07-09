@@ -131,6 +131,21 @@ export function LoanCard({
   );
 }
 
+export function ProgressBar({ saved, goal }: { saved: number; goal: number }) {
+  const pct = goal > 0 ? Math.min(100, (saved / goal) * 100) : 0;
+  const fmt = (n: number) => 'RM' + n.toLocaleString('en-MY', { maximumFractionDigits: 0 });
+  return (
+    <View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${pct}%` }]} />
+      </View>
+      <Text style={styles.progressText}>
+        {fmt(saved)} of {fmt(goal)} goal · {Math.round(pct)}%
+      </Text>
+    </View>
+  );
+}
+
 export function PrimaryButton({
   label,
   onPress,
@@ -284,6 +299,22 @@ const styles = StyleSheet.create({
   priceEst: {
     fontSize: 11,
     color: colors.faint,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
+  },
+  progressText: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: spacing.xs,
   },
   button: {
     borderRadius: radius.md,

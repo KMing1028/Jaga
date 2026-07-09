@@ -775,6 +775,21 @@ export function riskMatches(product: Product, category: RiskCategory): boolean {
   return !!product.risk && riskCategoryInfo[category].matches.some((m) => product.risk!.includes(m));
 }
 
+// ── Savings progress (self-reported — no ledger exists in this prototype) ──
+// Progress tracking covers the AHAM PRS funds and the MMF only; i-Saraan and
+// i-Saraan Plus are excluded per product decision (they count as EPF).
+export const PROGRESS_TRACKED_IDS = [
+  'aham-prs-growth',
+  'aham-prs-moderate',
+  'aham-prs-conservative',
+  'aham-aiiman-growth',
+  'aham-aiiman-moderate',
+  'aham-aiiman-conservative',
+  'aham-mmf',
+];
+
+export type RetirementGoal = { targetAmount: number; targetAge: number };
+
 // ── Emergency fund goal ──────────────────────────────────
 export type EmergencyGoal = { burden: string; months: number; expenses: number; goal: number };
 

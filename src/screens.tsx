@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { BackLink, Badge, LoanCard, LogoMark, PrimaryButton, ProductCard } from './components';
+import { BackLink, Badge, LoanCard, LogoMark, PrimaryButton, ProductCard, ProgressBar } from './components';
 import {
   Account,
   appLogo,
@@ -16,7 +16,9 @@ import {
   occupations,
   Product,
   products,
+  PROGRESS_TRACKED_IDS,
   PrsPeriod,
+  RetirementGoal,
   returnsDisclaimer,
   RiskCategory,
   riskCategoryInfo,
@@ -428,6 +430,9 @@ export function RetirementScreen({
   isMuslim,
   riskProfile,
   activePlanIds,
+  savedAmounts,
+  retirementGoal,
+  emergencyGoal,
   onOpenProduct,
   onOpenCalculator,
   onRetakeQuiz,
@@ -436,6 +441,9 @@ export function RetirementScreen({
   isMuslim: boolean;
   riskProfile: RiskCategory;
   activePlanIds: string[];
+  savedAmounts: Record<string, number>;
+  retirementGoal: RetirementGoal | null;
+  emergencyGoal: EmergencyGoal | null;
   onOpenProduct: (p: Product) => void;
   onOpenCalculator: () => void;
   onRetakeQuiz: () => void;
@@ -451,6 +459,13 @@ export function RetirementScreen({
   const suggested = items.filter((p) => riskMatches(p, riskProfile));
   const remaining = items.filter((p) => !riskMatches(p, riskProfile));
   const emergencyItems = products.filter((p) => p.sectionId === 'emergency' && allowedByFaith(p));
+
+  // self-reported totals (see PROGRESS_TRACKED_IDS — EPF schemes excluded)
+  const prsSaved = PROGRESS_TRACKED_IDS.filter((id) => id !== 'aham-mmf').reduce(
+    (sum, id) => sum + (savedAmounts[id] ?? 0),
+    0,
+  );
+  const mmfSaved = savedAmounts['aham-mmf'] ?? 0;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
@@ -484,6 +499,19 @@ export function RetirementScreen({
         <Text style={[styles.chev, { color: colors.onDeep }]}>›</Text>
       </Pressable>
 
+      {retirementGoal ? (
+        <View style={styles.goalSummary}>
+          <Text style={styles.goalSummaryLabel}>
+            RETIREMENT GOAL — RM{retirementGoal.targetAmount.toLocaleString('en-MY')} BY AGE {retirementGoal.targetAge}
+          </Text>
+          <ProgressBar saved={prsSaved} goal={retirementGoal.targetAmount} />
+        </View>
+      ) : (
+        <Pressable onPress={onOpenCalculator} accessibilityRole="button" accessibilityLabel="Set a retirement goal">
+          <Text style={styles.setGoalPrompt}>Set a retirement goal in the calculator to track progress</Text>
+        </Pressable>
+      )}
+
       <View style={{ marginTop: spacing.md }}>
         <Text style={styles.groupLabel}>EMERGENCY FUND — START HERE</Text>
         {emergencyItems.map((p) => (
@@ -494,6 +522,11 @@ export function RetirementScreen({
             onPress={() => onOpenProduct(p)}
           />
         ))}
+        {emergencyGoal && (
+          <View style={styles.goalSummary}>
+            <ProgressBar saved={mmfSaved} goal={emergencyGoal.goal} />
+          </View>
+        )}
 
         {suggested.length > 0 && (
           <>
@@ -698,6 +731,10 @@ export function ProductScreen({
   isActive,
   paymentRequired,
   emergencyGoal,
+  savedAmount = 0,
+  retirementGoal = null,
+  onSaveAmount,
+  onOpenCalculator,
   onAdjustGoal,
   onToggleActive,
   onBack,
@@ -706,10 +743,18 @@ export function ProductScreen({
   isActive: boolean;
   paymentRequired?: boolean; // insurance products need a DuitNow AutoDebit consent first
   emergencyGoal?: EmergencyGoal | null;
+  savedAmount?: number; // self-reported — this prototype has no contribution ledger
+  retirementGoal?: RetirementGoal | null;
+  onSaveAmount?: (n: number) => void;
+  onOpenCalculator?: () => void;
   onAdjustGoal?: () => void;
   onToggleActive: () => void;
   onBack: () => void;
 }) {
+  const [amountDraft, setAmountDraft] = useState(String(savedAmount || ''));
+  const tracked = PROGRESS_TRACKED_IDS.includes(product.id);
+  const goalAmount =
+    product.sectionId === 'emergency' ? emergencyGoal?.goal ?? null : retirementGoal?.targetAmount ?? null;
   const [period, setPeriod] = useState<PrsPeriod>('1Y');
   const isRetirementProduct = product.sectionId === 'retirement';
 
@@ -803,6 +848,42 @@ export function ProductScreen({
           <Text style={styles.noteText}>{product.note}</Text>
         </View>
       ) : null}
+
+      {tracked && isActive && (
+        <>
+          <Text style={styles.detailLabel}>MY PROGRESS</Text>
+          <Text style={styles.selfReportNote}>
+            Self-reported — enter what you’ve saved so far. JAGA doesn’t hold your money in this
+            prototype.
+          </Text>
+          <View style={styles.savedRow}>
+            <TextInput
+              value={amountDraft}
+              onChangeText={(t) => setAmountDraft(t.replace(/[^\d.]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="0"
+              placeholderTextColor={colors.faint}
+              style={[styles.input, { flex: 1 }]}
+              accessibilityLabel="Amount saved so far in ringgit"
+            />
+            <PrimaryButton
+              label="Update"
+              variant="deep"
+              onPress={() => onSaveAmount?.(parseFloat(amountDraft) || 0)}
+              style={{ paddingHorizontal: spacing.lg }}
+            />
+          </View>
+          {goalAmount ? (
+            <ProgressBar saved={savedAmount} goal={goalAmount} />
+          ) : (
+            <Pressable onPress={onOpenCalculator} accessibilityRole="button" accessibilityLabel="Set a retirement goal">
+              <Text style={styles.setGoalPrompt}>
+                Set a retirement goal to track progress → open the calculator
+              </Text>
+            </Pressable>
+          )}
+        </>
+      )}
 
       {product.referenceOnly ? (
         <View style={styles.refOnlyBox}>
@@ -1032,7 +1113,16 @@ function ConsentRow({ label, value }: { label: string; value: string }) {
 
 // ── 10. Retirement calculator ────────────────────────────
 
-export function CalculatorScreen({ onBack }: { onBack: () => void }) {
+export function CalculatorScreen({
+  savedGoal,
+  onSaveGoal,
+  onBack,
+}: {
+  savedGoal: RetirementGoal | null;
+  onSaveGoal: (g: RetirementGoal) => void;
+  onBack: () => void;
+}) {
+  const [goalSaved, setGoalSaved] = useState(false);
   const [age, setAge] = useState('25');
   const [retireAge, setRetireAge] = useState('60');
   const [monthly, setMonthly] = useState('100');
@@ -1085,6 +1175,23 @@ export function CalculatorScreen({ onBack }: { onBack: () => void }) {
         )}
         {invalidMsg && <Text style={styles.calcInvalid}>{invalidMsg}</Text>}
       </View>
+
+      {valid && (
+        <PrimaryButton
+          label={goalSaved ? '✓ Saved as your retirement goal' : 'Save this as my retirement goal'}
+          variant={goalSaved ? 'ghost' : 'deep'}
+          onPress={() => {
+            onSaveGoal({ targetAmount: Math.round(futureValue), targetAge: r });
+            setGoalSaved(true);
+          }}
+          style={{ marginTop: spacing.md }}
+        />
+      )}
+      {savedGoal && !goalSaved && (
+        <Text style={styles.activeHint}>
+          Current goal: RM{savedGoal.targetAmount.toLocaleString('en-MY')} by age {savedGoal.targetAge}
+        </Text>
+      )}
 
       <View style={styles.noteBox}>
         <Text style={styles.noteText}>
@@ -2238,6 +2345,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.muted,
     marginTop: -spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  selfReportNote: {
+    fontSize: 12,
+    color: colors.muted,
+    lineHeight: 16,
+    marginBottom: spacing.sm,
+  },
+  savedRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'stretch',
+    marginBottom: spacing.sm + 4,
+  },
+  setGoalPrompt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.accent,
+    marginTop: spacing.sm,
+  },
+  goalSummary: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  goalSummaryLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: colors.muted,
     marginBottom: spacing.sm,
   },
   loginError: {

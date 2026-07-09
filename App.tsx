@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Account, EmergencyGoal, Loan, Occupation, Product, RiskCategory, Section, sections } from './src/data';
+import { Account, EmergencyGoal, Loan, Occupation, Product, RetirementGoal, RiskCategory, Section, sections } from './src/data';
 import { TabBar, TabId } from './src/components';
 import {
   BankLinkScreen,
@@ -48,6 +48,8 @@ export default function App() {
   const [autoDebit, setAutoDebit] = useState(false);
   const [emergencyGoal, setEmergencyGoal] = useState<EmergencyGoal | null>(null);
   const [riskProfile, setRiskProfile] = useState<RiskCategory | null>(null);
+  const [savedAmounts, setSavedAmounts] = useState<Record<string, number>>({});
+  const [retirementGoal, setRetirementGoal] = useState<RetirementGoal | null>(null);
   const [loggedOut, setLoggedOut] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -76,6 +78,8 @@ export default function App() {
           if (s.emergencyGoal) setEmergencyGoal(s.emergencyGoal);
           if (typeof s.loggedOut === 'boolean') setLoggedOut(s.loggedOut);
           if (s.riskProfile) setRiskProfile(s.riskProfile);
+          if (s.savedAmounts && typeof s.savedAmounts === 'object') setSavedAmounts(s.savedAmounts);
+          if (s.retirementGoal) setRetirementGoal(s.retirementGoal);
         } catch {
           // corrupt store — fall back to defaults
         }
@@ -88,9 +92,9 @@ export default function App() {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile }),
+      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal }),
     ).catch(() => {});
-  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile]);
+  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal]);
 
   const resetApp = () => {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
@@ -106,6 +110,8 @@ export default function App() {
     setEmergencyGoal(null);
     setLoggedOut(false);
     setRiskProfile(null);
+    setSavedAmounts({});
+    setRetirementGoal(null);
   };
 
   const togglePlan = (id: string) =>
@@ -213,6 +219,10 @@ export default function App() {
           isInsuranceProduct(overlay.product) && !linkedBank && !overlay.product.referenceOnly
         }
         emergencyGoal={emergencyGoal}
+        savedAmount={savedAmounts[overlay.product.id] ?? 0}
+        retirementGoal={retirementGoal}
+        onSaveAmount={(n) => setSavedAmounts((prev) => ({ ...prev, [overlay.product.id]: n }))}
+        onOpenCalculator={() => setOverlay({ name: 'calculator' })}
         onAdjustGoal={() => setOverlay({ name: 'emergencyGoal', product: overlay.product })}
         onToggleActive={() => requestToggle(overlay.product, overlay.fromSection)}
         onBack={() =>
@@ -254,7 +264,13 @@ export default function App() {
       />
     );
   } else if (overlay?.name === 'calculator') {
-    content = <CalculatorScreen onBack={() => setOverlay(null)} />;
+    content = (
+      <CalculatorScreen
+        savedGoal={retirementGoal}
+        onSaveGoal={setRetirementGoal}
+        onBack={() => setOverlay(null)}
+      />
+    );
   } else if (overlay?.name === 'riskQuiz') {
     content = (
       <RiskQuizScreen
@@ -299,6 +315,9 @@ export default function App() {
         isMuslim={account.isMuslim}
         riskProfile={riskProfile}
         activePlanIds={activePlanIds}
+        savedAmounts={savedAmounts}
+        retirementGoal={retirementGoal}
+        emergencyGoal={emergencyGoal}
         onOpenProduct={(product) => openProduct(product)}
         onOpenCalculator={() => setOverlay({ name: 'calculator' })}
         onRetakeQuiz={() => setOverlay({ name: 'riskQuiz' })}
