@@ -2155,7 +2155,7 @@ const styles = StyleSheet.create({
     color: '#C7B299',
   },
   summaryAmount: {
-    fontSize: 32,
+    fontSize: 27,
     fontWeight: '800',
     color: colors.onDeep,
     marginTop: spacing.xs,
