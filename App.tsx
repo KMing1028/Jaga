@@ -14,7 +14,7 @@ import {
   EmergencyGoalScreen,
   InsuranceScreen,
   IntroScreen,
-  LinkedBank,
+  LinkedPaymentMethod,
   LoanDetailScreen,
   LoginScreen,
   LoansScreen,
@@ -53,7 +53,7 @@ export default function App() {
   const [tab, setTab] = useState<TabId>('home');
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [activePlanIds, setActivePlanIds] = useState<string[]>([]);
-  const [linkedBank, setLinkedBank] = useState<LinkedBank | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<LinkedPaymentMethod | null>(null);
   const [autoDebit, setAutoDebit] = useState(false);
   const [emergencyGoal, setEmergencyGoal] = useState<EmergencyGoal | null>(null);
   const [riskProfile, setRiskProfile] = useState<RiskCategory | null>(null);
@@ -85,7 +85,12 @@ export default function App() {
           }
           if (s.occupation) setOccupation(s.occupation);
           if (Array.isArray(s.activePlanIds)) setActivePlanIds(s.activePlanIds);
-          if (s.linkedBank) setLinkedBank(s.linkedBank);
+          const lm = s.paymentMethod ?? s.linkedBank;
+          if (lm) {
+            // migrate pre-union shapes: {bankId,last4} was a bank consent ref
+            if (!lm.type) setPaymentMethod({ type: 'bank', bankId: lm.bankId, ref: lm.last4 ?? lm.ref });
+            else setPaymentMethod(lm);
+          }
           if (typeof s.autoDebit === 'boolean') setAutoDebit(s.autoDebit);
           if (s.emergencyGoal) setEmergencyGoal(s.emergencyGoal);
           if (typeof s.loggedOut === 'boolean') setLoggedOut(s.loggedOut);
@@ -108,9 +113,9 @@ export default function App() {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal, pin }),
+      JSON.stringify({ started, account, occupation, activePlanIds, paymentMethod, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal, pin }),
     ).catch(() => {});
-  }, [hydrated, started, account, occupation, activePlanIds, linkedBank, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal, pin]);
+  }, [hydrated, started, account, occupation, activePlanIds, paymentMethod, autoDebit, emergencyGoal, loggedOut, riskProfile, savedAmounts, retirementGoal, pin]);
 
   const resetApp = () => {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
@@ -121,7 +126,7 @@ export default function App() {
     setTab('home');
     setOverlay(null);
     setActivePlanIds([]);
-    setLinkedBank(null);
+    setPaymentMethod(null);
     setAutoDebit(false);
     setEmergencyGoal(null);
     setLoggedOut(false);
@@ -174,7 +179,7 @@ export default function App() {
       setOverlay({ name: 'ekyc', forProduct: product, fromSection });
       return;
     }
-    if (activating && isInsuranceProduct(product) && !linkedBank) {
+    if (activating && isInsuranceProduct(product) && !paymentMethod) {
       setOverlay({ name: 'bankLink', forProduct: product, fromSection });
       return;
     }
@@ -290,7 +295,7 @@ export default function App() {
         product={overlay.product}
         isActive={activePlanIds.includes(overlay.product.id)}
         paymentRequired={
-          isInsuranceProduct(overlay.product) && !linkedBank && !overlay.product.referenceOnly
+          isInsuranceProduct(overlay.product) && !paymentMethod && !overlay.product.referenceOnly
         }
         emergencyGoal={emergencyGoal}
         savedAmount={savedAmounts[overlay.product.id] ?? 0}
@@ -322,15 +327,15 @@ export default function App() {
       : null;
     content = (
       <BankLinkScreen
-        linkedBank={linkedBank}
+        linkedMethod={paymentMethod}
         forProductName={overlay.forProduct?.name}
-        onLink={(b) => {
-          setLinkedBank(b);
+        onLink={(m) => {
+          setPaymentMethod(m);
           setAutoDebit(true);
           setOverlay(returnTo);
         }}
         onUnlink={() => {
-          setLinkedBank(null);
+          setPaymentMethod(null);
           setAutoDebit(false);
           setOverlay(returnTo);
         }}
@@ -375,7 +380,7 @@ export default function App() {
         account={account}
         occupation={occupation}
         activePlanIds={activePlanIds}
-        linkedBank={linkedBank}
+        linkedMethod={paymentMethod}
         autoDebit={autoDebit}
         onToggleAutoDebit={() => setAutoDebit((v) => !v)}
         onOpenBankLink={() => setOverlay({ name: 'bankLink' })}

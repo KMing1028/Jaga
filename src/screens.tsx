@@ -31,7 +31,9 @@ import {
 } from './data';
 import { colors, radius, spacing } from './theme';
 
-export type LinkedBank = { bankId: string; last4: string };
+export type LinkedPaymentMethod =
+  | { type: 'bank'; bankId: string; ref: string }
+  | { type: 'card'; last4: string; holder: string; ref: string };
 
 function isRelevant(product: Product, occupationId: string) {
   return product.relevantTo === 'all' || product.relevantTo.includes(occupationId);
@@ -224,7 +226,7 @@ export function DashboardScreen({
   account,
   occupation,
   activePlanIds,
-  linkedBank,
+  linkedMethod,
   autoDebit,
   onToggleAutoDebit,
   onOpenBankLink,
@@ -237,7 +239,7 @@ export function DashboardScreen({
   account: Account;
   occupation: Occupation;
   activePlanIds: string[];
-  linkedBank: LinkedBank | null;
+  linkedMethod: LinkedPaymentMethod | null;
   autoDebit: boolean;
   onToggleAutoDebit: () => void;
   onOpenBankLink: () => void;
@@ -313,12 +315,25 @@ export function DashboardScreen({
       </View>
 
       {/* payment method */}
-      {linkedBank ? (
+      {linkedMethod ? (
         <Pressable onPress={onOpenBankLink} style={styles.bankCard}>
-          <View style={[styles.bankDot, { backgroundColor: banks.find((b) => b.id === linkedBank.bankId)?.color ?? colors.accent }]} />
+          <View
+            style={[
+              styles.bankDot,
+              {
+                backgroundColor:
+                  linkedMethod.type === 'bank'
+                    ? banks.find((b) => b.id === linkedMethod.bankId)?.color ?? colors.accent
+                    : colors.deep,
+              },
+            ]}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.bankName}>
-              DuitNow AutoDebit · {banks.find((b) => b.id === linkedBank.bankId)?.name ?? 'Bank'} · ref ••{linkedBank.last4}
+              {linkedMethod.type === 'bank'
+                ? `DuitNow AutoDebit · ${banks.find((b) => b.id === linkedMethod.bankId)?.name ?? 'Bank'}`
+                : `Card ••${linkedMethod.last4}`}{' '}
+              · ref ••{linkedMethod.ref}
             </Text>
             <Text style={styles.bankHint}>
               {autoDebit ? 'Auto-debit on — plans charged monthly' : 'Auto-debit off — pay manually anytime'}
@@ -1342,25 +1357,35 @@ export function LoanDetailScreen({ loan, onBack }: { loan: Loan; onBack: () => v
 // ── 9. Bank account linking ──────────────────────────────
 
 export function BankLinkScreen({
-  linkedBank,
+  linkedMethod,
   forProductName,
   onLink,
   onUnlink,
   onBack,
 }: {
-  linkedBank: LinkedBank | null;
+  linkedMethod: LinkedPaymentMethod | null;
   forProductName?: string; // set when consent is required to activate an insurance plan
-  onLink: (b: LinkedBank) => void;
+  onLink: (m: LinkedPaymentMethod) => void;
   onUnlink: () => void;
   onBack: () => void;
 }) {
-  const [bankId, setBankId] = useState<string | null>(linkedBank?.bankId ?? null);
+  const [method, setMethod] = useState<'bank' | 'card'>(linkedMethod?.type ?? 'bank');
+  const [bankId, setBankId] = useState<string | null>(
+    linkedMethod?.type === 'bank' ? linkedMethod.bankId : null,
+  );
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
   const bank = banks.find((b) => b.id === bankId);
+  const cardDigits = cardNumber.replace(/\D/g, '');
+  const cardReady = cardDigits.length >= 15 && cardExpiry.length >= 4 && cardHolder.trim().length >= 2;
+  const canApprove = method === 'bank' ? !!bankId : cardReady;
+  const mockRef = () => String(Math.floor(1000 + Math.random() * 9000));
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screenTab}>
       <BackLink onPress={onBack} />
-      <Text style={styles.h1}>💳 DuitNow AutoDebit</Text>
+      <Text style={styles.h1}>💳 Payment consent</Text>
       <Text style={styles.sub}>
         A one-time consent that lets JAGA collect your plan payments automatically — small amounts, right
         after you get paid. Required for insurance plans; optional for retirement, where you can always
@@ -1375,10 +1400,14 @@ export function BankLinkScreen({
         </View>
       )}
 
-      {linkedBank && (
+      {linkedMethod && (
         <View style={styles.linkedBox}>
           <Text style={styles.linkedText}>
-            Active consent: {banks.find((b) => b.id === linkedBank.bankId)?.name} · ref ••{linkedBank.last4}
+            Active:{' '}
+            {linkedMethod.type === 'bank'
+              ? `DuitNow AutoDebit · ${banks.find((b) => b.id === linkedMethod.bankId)?.name}`
+              : `Card ••${linkedMethod.last4}`}{' '}
+            · ref ••{linkedMethod.ref}
           </Text>
           <Pressable onPress={onUnlink} hitSlop={8} accessibilityRole="button" accessibilityLabel="Revoke consent">
             <Text style={styles.unlinkText}>Revoke</Text>
@@ -1386,43 +1415,100 @@ export function BankLinkScreen({
         </View>
       )}
 
-      <Text style={styles.detailLabel}>CHOOSE YOUR BANK</Text>
-      {banks.map((b) => (
-        <Pressable
-          key={b.id}
-          onPress={() => setBankId(b.id)}
-          style={[styles.bankRow, bankId === b.id && styles.bankRowOn]}
-        >
-          <View style={[styles.bankDot, { backgroundColor: b.color }]} />
-          <Text style={styles.bankRowName}>{b.name}</Text>
-          <Text style={[styles.bankRadio, bankId === b.id && { color: colors.accent }]}>
-            {bankId === b.id ? '●' : '○'}
-          </Text>
-        </Pressable>
-      ))}
+      <Text style={styles.detailLabel}>HOW SHOULD JAGA COLLECT PAYMENTS?</Text>
+      <View style={styles.segmentRow}>
+        {(
+          [
+            { id: 'bank', label: 'Bank · DuitNow' },
+            { id: 'card', label: 'Debit/credit card' },
+          ] as const
+        ).map((m) => (
+          <Pressable
+            key={m.id}
+            onPress={() => setMethod(m.id)}
+            style={[styles.segment, method === m.id && styles.segmentOn]}
+            accessibilityRole="button"
+            accessibilityLabel={m.label}
+          >
+            <Text style={[styles.segmentText, method === m.id && styles.segmentTextOn]}>{m.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {method === 'bank' ? (
+        <>
+          <Text style={styles.detailLabel}>CHOOSE YOUR BANK</Text>
+          {banks.map((b) => (
+            <Pressable
+              key={b.id}
+              onPress={() => setBankId(b.id)}
+              style={[styles.bankRow, bankId === b.id && styles.bankRowOn]}
+            >
+              <View style={[styles.bankDot, { backgroundColor: b.color }]} />
+              <Text style={styles.bankRowName}>{b.name}</Text>
+              <Text style={[styles.bankRadio, bankId === b.id && { color: colors.accent }]}>
+                {bankId === b.id ? '●' : '○'}
+              </Text>
+            </Pressable>
+          ))}
+        </>
+      ) : (
+        <>
+          <Text style={styles.detailLabel}>CARD DETAILS</Text>
+          <FormField
+            label="Card number"
+            value={cardNumber}
+            onChange={(t) => setCardNumber(t.replace(/[^\d\s]/g, '').slice(0, 19))}
+            placeholder="1234 5678 9012 3456"
+          />
+          <FormField
+            label="Expiry (MM/YY)"
+            value={cardExpiry}
+            onChange={(t) => setCardExpiry(t.replace(/[^\d/]/g, '').slice(0, 5))}
+            placeholder="12/28"
+          />
+          <FormField label="Name on card" value={cardHolder} onChange={setCardHolder} placeholder="As printed on the card" />
+        </>
+      )}
 
       <Text style={styles.detailLabel}>CONSENT SUMMARY</Text>
       <View style={styles.consentCard}>
         <ConsentRow label="Payee" value="JAGA (prototype)" />
-        <ConsentRow label="Type" value="Recurring + ad-hoc collections" />
+        <ConsentRow
+          label="Type"
+          value={method === 'bank' ? 'DuitNow AutoDebit — recurring + ad-hoc collections' : 'Card-on-file recurring charge'}
+        />
         <ConsentRow label="Frequency" value="Monthly, on your payout day" />
         <ConsentRow label="Monthly cap" value="RM300 — nothing above this can be pulled" />
-        <ConsentRow label="Cancel" value="Revoke anytime in JAGA or your banking app" />
+        <ConsentRow label="Cancel" value="Revoke anytime in JAGA or with your bank/card issuer" />
       </View>
 
       <PrimaryButton
-        label={bank ? `Approve consent with ${bank.name}` : 'Choose a bank to continue'}
+        label={
+          method === 'bank'
+            ? bank
+              ? `Approve consent with ${bank.name}`
+              : 'Choose a bank to continue'
+            : cardReady
+              ? 'Approve card consent'
+              : 'Fill in the card details to continue'
+        }
         onPress={() => {
-          if (!bankId) return;
-          // mock consent reference — a real flow would round-trip PayNet / the bank here
-          const ref = String(Math.floor(1000 + Math.random() * 9000));
-          onLink({ bankId, last4: ref });
+          if (!canApprove) return;
+          // mock consent reference — a real flow would round-trip PayNet / the card network here
+          if (method === 'bank' && bankId) {
+            onLink({ type: 'bank', bankId, ref: mockRef() });
+          } else if (method === 'card') {
+            // mask immediately: only the last four digits are kept
+            onLink({ type: 'card', last4: cardDigits.slice(-4), holder: cardHolder.trim(), ref: mockRef() });
+          }
         }}
-        style={{ marginTop: spacing.lg, opacity: bankId ? 1 : 0.4 }}
+        style={{ marginTop: spacing.lg, opacity: canApprove ? 1 : 0.4 }}
       />
       <Text style={styles.activeHint}>
-        Prototype only — no real PayNet/FPX connection is made. In production this button would hand off
-        to your bank to authorise the DuitNow AutoDebit consent.
+        {method === 'bank'
+          ? 'Prototype only — no real PayNet/FPX connection is made. In production this button would hand off to your bank to authorise the DuitNow AutoDebit consent.'
+          : 'Prototype only — no real card network authorization occurs. The full card number is never stored.'}
       </Text>
     </ScrollView>
   );
